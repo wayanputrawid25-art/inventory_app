@@ -242,6 +242,13 @@
                 <h2 id="outletDetailStock">0</h2>
               </div>
             </div>
+            <div class="mini-tab-strip top-space" id="outletDetailCategoryTabs">
+              <button type="button" class="active-mini-tab" onclick="selectOutletDetailCategory(event, 'all')">Semua</button>
+              <button type="button" onclick="selectOutletDetailCategory(event, 'modul')">Modul</button>
+              <button type="button" onclick="selectOutletDetailCategory(event, 'seragam')">Seragam</button>
+              <button type="button" onclick="selectOutletDetailCategory(event, 'poster')">Poster</button>
+              <button type="button" onclick="selectOutletDetailCategory(event, 'lain-lain')">Lain-lain</button>
+            </div>
             <div class="table-shell top-space">
               <table class="table table-compact">
                 <thead>
@@ -373,6 +380,13 @@
         </div>
 
         <div id="persediaanRestock" class="module-content" style="display:none;">
+          <div class="mini-tab-strip" id="persediaanRestockCategoryTabs">
+            <button type="button" class="active-mini-tab" onclick="selectPersediaanCategory(event, 'all')">Semua</button>
+            <button type="button" onclick="selectPersediaanCategory(event, 'modul')">Modul</button>
+            <button type="button" onclick="selectPersediaanCategory(event, 'seragam')">Seragam</button>
+            <button type="button" onclick="selectPersediaanCategory(event, 'poster')">Poster</button>
+            <button type="button" onclick="selectPersediaanCategory(event, 'lain-lain')">Lain-lain</button>
+          </div>
           <div class="table-shell">
             <table class="table">
               <thead>
@@ -570,6 +584,13 @@
         </div>
 
         <div id="forecastList" class="module-content" style="display:none;">
+          <div class="mini-tab-strip" id="forecastCategoryTabs">
+            <button type="button" class="active-mini-tab" onclick="selectForecastCategory(event, 'all')">Semua</button>
+            <button type="button" onclick="selectForecastCategory(event, 'modul')">Modul</button>
+            <button type="button" onclick="selectForecastCategory(event, 'seragam')">Seragam</button>
+            <button type="button" onclick="selectForecastCategory(event, 'poster')">Poster</button>
+            <button type="button" onclick="selectForecastCategory(event, 'lain-lain')">Lain-lain</button>
+          </div>
           <div class="table-shell">
             <table class="table">
               <thead>
@@ -692,6 +713,13 @@
             <div>Problem: <b id="sum_problem">0</b></div>
           </div>
 
+          <div class="mini-tab-strip" id="opnameCategoryTabs">
+            <button type="button" class="active-mini-tab" onclick="selectOpnameCategoryTab(event, 'all')">Semua</button>
+            <button type="button" onclick="selectOpnameCategoryTab(event, 'modul')">Modul</button>
+            <button type="button" onclick="selectOpnameCategoryTab(event, 'seragam')">Seragam</button>
+            <button type="button" onclick="selectOpnameCategoryTab(event, 'poster')">Poster</button>
+            <button type="button" onclick="selectOpnameCategoryTab(event, 'lain-lain')">Lain-lain</button>
+          </div>
           <div class="table-wrapper">
             <table class="table opname-table">
               <thead>

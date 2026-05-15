@@ -15,6 +15,8 @@ const state = {
   },
   persediaan: [],
   persediaanCategory: "all",
+  outletDetailCategory: "all",
+  forecastCategory: "all",
   forecast: [],
   audit: {
     db_ready: false,
@@ -590,7 +592,17 @@ function renderOutletTransactionDetail(detail, selectedRow) {
     return;
   }
 
-  detail.forEach(item => {
+  const filteredDetail = detail.filter(item => {
+    const category = getOpnameCategory(item.nama_produk);
+    return state.outletDetailCategory === "all" || category === state.outletDetailCategory;
+  });
+
+  if (!filteredDetail.length) {
+    body.innerHTML = `<tr><td colspan="8">Tidak ada detail produk pada kategori ini.</td></tr>`;
+    return;
+  }
+
+  filteredDetail.forEach(item => {
     const stock = Number(item.stok_akhir || 0);
     const stockClass = stock <= 0 ? "status-out" : stock <= 10 ? "status-low" : "status-safe";
     const stockLabel = stock <= 0 ? "Habis" : stock <= 10 ? "Menipis" : "Masih Ada";
@@ -612,6 +624,17 @@ function renderOutletTransactionDetail(detail, selectedRow) {
 function selectSalesOutlet(outletName) {
   selectedSalesOutlet = outletName;
   loadOutletTransactionMonitor();
+}
+
+function selectOutletDetailCategory(event, category) {
+  state.outletDetailCategory = category;
+  document.querySelectorAll("#outletDetailCategoryTabs button")
+    .forEach(button => button.classList.remove("active-mini-tab"));
+  document.querySelector(`#outletDetailCategoryTabs button[onclick*="'${category}'"]`)?.classList.add("active-mini-tab");
+  renderOutletTransactionDetail(
+    toArray(state.outletTransactions.detail),
+    toArray(state.outletTransactions.outlets).find(item => item.nama_outlet === selectedSalesOutlet)
+  );
 }
 
 async function loadKPI() {
@@ -1052,9 +1075,10 @@ function renderPersediaanTables() {
 
 function selectPersediaanCategory(event, category) {
   state.persediaanCategory = category;
-  document.querySelectorAll("#persediaanCategoryTabs button")
+  document.querySelectorAll("#persediaanCategoryTabs button, #persediaanRestockCategoryTabs button")
     .forEach(button => button.classList.remove("active-mini-tab"));
-  event?.target?.classList.add("active-mini-tab");
+  document.querySelectorAll(`#persediaanCategoryTabs button[onclick*="'${category}'"], #persediaanRestockCategoryTabs button[onclick*="'${category}'"]`)
+    .forEach(button => button.classList.add("active-mini-tab"));
   renderPersediaanTables();
 }
 
@@ -1185,81 +1209,104 @@ async function loadForecast() {
   showLoader();
   try {
     state.forecast = toArray(await fetchJson(`/api/forecast?${getQueryParams().toString()}`));
-    const body = document.getElementById("forecastBody");
-    const recommendationCards = document.getElementById("forecastRecommendationCards");
-    body.innerHTML = "";
-    recommendationCards.innerHTML = "";
-
-    let totalForecast = 0;
-    let totalActual = 0;
-    let totalGap = 0;
-    let produkAktif = 0;
-    let accuracyTotal = 0;
-    let accuracyCount = 0;
-
-    state.forecast.forEach(item => {
-      const forecast = Number(item.forecast_bulan_depan || 0);
-      const actual = Number(item.bulan_3 || 0);
-      const gap = forecast - actual;
-      totalForecast += forecast;
-      totalActual += actual;
-      totalGap += gap;
-      if (forecast > 0) produkAktif += 1;
-
-      const accuracy = getForecastAccuracy(forecast, actual);
-      if (accuracy !== null) {
-        accuracyTotal += accuracy;
-        accuracyCount += 1;
-      }
-
-      body.innerHTML += `
-        <tr>
-          <td>${escapeHtml(item.sku)}</td>
-          <td>${escapeHtml(item.nama_produk)}</td>
-          <td>${formatNumber(item.bulan_1)}</td>
-          <td>${formatNumber(item.bulan_2)}</td>
-          <td>${formatNumber(item.bulan_3)}</td>
-          <td>${formatNumber(item.ema_3_bulan)}</td>
-          <td>${formatNumber(item.forecast_bulan_depan)}</td>
-        </tr>
-      `;
-    });
-
-    const sorted = [...state.forecast].sort((a, b) => Number(b.forecast_bulan_depan || 0) - Number(a.forecast_bulan_depan || 0));
-    const topDemand = sorted[0];
-
-    setText("forecast_total_produk", formatNumber(state.forecast.length));
-    setText("forecast_total_value", formatNumber(totalForecast));
-    setText("forecast_actual_value", formatNumber(totalActual));
-    setText("forecast_gap_value", formatNumber(totalGap));
-    setText("forecast_accuracy", `${formatForecastPercentage(accuracyCount ? accuracyTotal / accuracyCount : 0)}%`);
-    setText("forecast_avg_tahunan", formatNumber(state.forecast.length ? Math.ceil(totalForecast / state.forecast.length) : 0));
-    setText("forecast_top_demand", topDemand ? topDemand.nama_produk : "-");
-    setText("forecast_produk_aktif", formatNumber(produkAktif));
-
-    sorted.filter(item => Number(item.forecast_bulan_depan || 0) > 0).slice(0, 3).forEach((item, index) => {
-      recommendationCards.innerHTML += `
-        <div class="insight-card">
-          <h4>Prioritas ${index + 1}</h4>
-          <p>${escapeHtml(item.nama_produk)} diproyeksikan membutuhkan ${formatNumber(item.forecast_bulan_depan)} unit bulan depan. Siapkan stok minimal di atas angka ini.</p>
-        </div>
-      `;
-    });
-
-    if (!recommendationCards.innerHTML) {
-      recommendationCards.innerHTML = `
-        <div class="insight-card">
-          <h4>Belum ada rekomendasi</h4>
-          <p>Histori penjualan 3 bulan masih belum cukup untuk memberi prioritas forecast.</p>
-        </div>
-      `;
-    }
+    renderForecast();
   } catch (error) {
     console.error("Forecast error:", error);
     showToast(error.message || "Gagal memuat forecast", false);
   } finally {
     hideLoader();
   }
+}
+
+function renderForecast() {
+  const body = document.getElementById("forecastBody");
+  const recommendationCards = document.getElementById("forecastRecommendationCards");
+  if (!body || !recommendationCards) return;
+
+  body.innerHTML = "";
+  recommendationCards.innerHTML = "";
+
+  let totalForecast = 0;
+  let totalActual = 0;
+  let totalGap = 0;
+  let produkAktif = 0;
+  let accuracyTotal = 0;
+  let accuracyCount = 0;
+
+  const filteredItems = state.forecast.filter(item => {
+    const category = getOpnameCategory(item.nama_produk);
+    return state.forecastCategory === "all" || category === state.forecastCategory;
+  });
+
+  filteredItems.forEach(item => {
+    const forecast = Number(item.forecast_bulan_depan || 0);
+    const actual = Number(item.bulan_3 || 0);
+    const gap = forecast - actual;
+    totalForecast += forecast;
+    totalActual += actual;
+    totalGap += gap;
+    if (forecast > 0) produkAktif += 1;
+
+    const accuracy = getForecastAccuracy(forecast, actual);
+    if (accuracy !== null) {
+      accuracyTotal += accuracy;
+      accuracyCount += 1;
+    }
+
+    body.innerHTML += `
+      <tr>
+        <td>${escapeHtml(item.sku)}</td>
+        <td>${escapeHtml(item.nama_produk)}</td>
+        <td>${formatNumber(item.bulan_1)}</td>
+        <td>${formatNumber(item.bulan_2)}</td>
+        <td>${formatNumber(item.bulan_3)}</td>
+        <td>${formatNumber(item.ema_3_bulan)}</td>
+        <td>${formatNumber(item.forecast_bulan_depan)}</td>
+      </tr>
+    `;
+  });
+
+  if (!filteredItems.length) {
+    body.innerHTML = `<tr><td colspan="7">Tidak ada data forecast pada kategori ini.</td></tr>`;
+  }
+
+  const sorted = [...filteredItems].sort((a, b) => Number(b.forecast_bulan_depan || 0) - Number(a.forecast_bulan_depan || 0));
+  const topDemand = sorted[0];
+
+  setText("forecast_total_produk", formatNumber(filteredItems.length));
+  setText("forecast_total_value", formatNumber(totalForecast));
+  setText("forecast_actual_value", formatNumber(totalActual));
+  setText("forecast_gap_value", formatNumber(totalGap));
+  setText("forecast_accuracy", `${formatForecastPercentage(accuracyCount ? accuracyTotal / accuracyCount : 0)}%`);
+  setText("forecast_avg_tahunan", formatNumber(filteredItems.length ? Math.ceil(totalForecast / filteredItems.length) : 0));
+  setText("forecast_top_demand", topDemand ? topDemand.nama_produk : "-");
+  setText("forecast_produk_aktif", formatNumber(produkAktif));
+
+  sorted.filter(item => Number(item.forecast_bulan_depan || 0) > 0).slice(0, 3).forEach((item, index) => {
+    recommendationCards.innerHTML += `
+      <div class="insight-card">
+        <h4>Prioritas ${index + 1}</h4>
+        <p>${escapeHtml(item.nama_produk)} diproyeksikan membutuhkan ${formatNumber(item.forecast_bulan_depan)} unit bulan depan. Siapkan stok minimal di atas angka ini.</p>
+      </div>
+    `;
+  });
+
+  if (!recommendationCards.innerHTML) {
+    recommendationCards.innerHTML = `
+      <div class="insight-card">
+        <h4>Belum ada rekomendasi</h4>
+        <p>Histori penjualan 3 bulan masih belum cukup untuk memberi prioritas forecast.</p>
+      </div>
+    `;
+  }
+}
+
+function selectForecastCategory(event, category) {
+  state.forecastCategory = category;
+  document.querySelectorAll("#forecastCategoryTabs button")
+    .forEach(button => button.classList.remove("active-mini-tab"));
+  document.querySelector(`#forecastCategoryTabs button[onclick*="'${category}'"]`)?.classList.add("active-mini-tab");
+  renderForecast();
 }
 
 function getForecastAccuracy(forecast, actual) {
@@ -1337,6 +1384,7 @@ async function loadStokSistem() {
 
     setText("sum_total", formatNumber(state.opname.length));
     updateSummary();
+    filterOpname();
   } catch (error) {
     console.error("Stok sistem error:", error);
     showToast(error.message || "Gagal memuat stok sistem", false);
@@ -1403,11 +1451,21 @@ function filterOpname() {
   const keyword = (document.getElementById("searchOpname")?.value || "").toLowerCase();
   const category = document.getElementById("opnameCategoryFilter")?.value || "all";
 
+  document.querySelectorAll("#opnameCategoryTabs button")
+    .forEach(button => button.classList.remove("active-mini-tab"));
+  document.querySelector(`#opnameCategoryTabs button[onclick*="'${category}'"]`)?.classList.add("active-mini-tab");
+
   document.querySelectorAll("#opnameBody tr").forEach(row => {
     const matchText = row.textContent.toLowerCase().includes(keyword);
     const matchCategory = category === "all" || row.dataset.category === category;
     row.style.display = matchText && matchCategory ? "" : "none";
   });
+}
+
+function selectOpnameCategoryTab(event, category) {
+  const select = document.getElementById("opnameCategoryFilter");
+  if (select) select.value = category;
+  filterOpname();
 }
 
 async function loadHistory() {
