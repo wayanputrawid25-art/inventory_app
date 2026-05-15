@@ -14,6 +14,7 @@ const state = {
     selected_outlet: ""
   },
   persediaan: [],
+  persediaanCategory: "all",
   forecast: [],
   audit: {
     db_ready: false,
@@ -975,61 +976,86 @@ async function loadPersediaan() {
   showLoader();
   try {
     state.persediaan = toArray(await fetchJson(`/api/persediaan?${getQueryParams().toString()}`));
-
-    const body = document.getElementById("persediaanBody");
-    const restockBody = document.getElementById("persediaanRestockBody");
-    body.innerHTML = "";
-    restockBody.innerHTML = "";
-
-    let totalStok = 0;
-    let lowStock = 0;
-    let outStock = 0;
-
-    state.persediaan.forEach(item => {
-      const stokAkhir = Number(item.stok_akhir || 0);
-      const category = getOpnameCategory(item.nama_produk);
-      const categoryLabel = getOpnameCategoryLabel(category);
-      totalStok += stokAkhir;
-      if (stokAkhir <= 0) outStock += 1;
-      if (stokAkhir > 0 && stokAkhir <= 10) lowStock += 1;
-
-      body.innerHTML += `
-        <tr>
-          <td>${escapeHtml(item.sku)}</td>
-          <td>${escapeHtml(item.nama_produk)}</td>
-          <td><span class="status-badge category-badge category-${category}">${categoryLabel}</span></td>
-          <td>${formatNumber(item.stok_awal)}</td>
-          <td>${formatNumber(item.pembelian)}</td>
-          <td>${formatNumber(item.penjualan)}</td>
-          <td>${formatNumber(item.penyesuaian)}</td>
-          <td>${formatNumber(stokAkhir)}</td>
-        </tr>
-      `;
-
-      if (stokAkhir <= 10) {
-        const statusClass = stokAkhir <= 0 ? "status-out" : "status-low";
-        const label = stokAkhir <= 0 ? "Minus / Habis" : "Prioritas Restock";
-        restockBody.innerHTML += `
-          <tr>
-            <td>${escapeHtml(item.sku)}</td>
-            <td>${escapeHtml(item.nama_produk)}</td>
-            <td>${formatNumber(stokAkhir)}</td>
-            <td><span class="status-badge ${statusClass}">${label}</span></td>
-          </tr>
-        `;
-      }
-    });
-
-    setText("persediaan_total_sku", formatNumber(state.persediaan.length));
-    setText("persediaan_total_stok", formatNumber(totalStok));
-    setText("persediaan_low_stock", formatNumber(lowStock));
-    setText("persediaan_out_stock", formatNumber(outStock));
+    renderPersediaanTables();
   } catch (error) {
     console.error("Persediaan error:", error);
     showToast(error.message || "Gagal memuat persediaan", false);
   } finally {
     hideLoader();
   }
+}
+
+function renderPersediaanTables() {
+  const body = document.getElementById("persediaanBody");
+  const restockBody = document.getElementById("persediaanRestockBody");
+  if (!body || !restockBody) return;
+
+  body.innerHTML = "";
+  restockBody.innerHTML = "";
+
+  let totalStok = 0;
+  let lowStock = 0;
+  let outStock = 0;
+
+  const filteredItems = state.persediaan.filter(item => {
+    const category = getOpnameCategory(item.nama_produk);
+    return state.persediaanCategory === "all" || category === state.persediaanCategory;
+  });
+
+  filteredItems.forEach(item => {
+    const stokAkhir = Number(item.stok_akhir || 0);
+    const category = getOpnameCategory(item.nama_produk);
+    const categoryLabel = getOpnameCategoryLabel(category);
+    totalStok += stokAkhir;
+    if (stokAkhir <= 0) outStock += 1;
+    if (stokAkhir > 0 && stokAkhir <= 10) lowStock += 1;
+
+    body.innerHTML += `
+      <tr>
+        <td>${escapeHtml(item.sku)}</td>
+        <td>${escapeHtml(item.nama_produk)}</td>
+        <td><span class="status-badge category-badge category-${category}">${categoryLabel}</span></td>
+        <td>${formatNumber(item.stok_awal)}</td>
+        <td>${formatNumber(item.pembelian)}</td>
+        <td>${formatNumber(item.penjualan)}</td>
+        <td>${formatNumber(item.penyesuaian)}</td>
+        <td>${formatNumber(stokAkhir)}</td>
+      </tr>
+    `;
+
+    if (stokAkhir <= 10) {
+      const statusClass = stokAkhir <= 0 ? "status-out" : "status-low";
+      const label = stokAkhir <= 0 ? "Minus / Habis" : "Prioritas Restock";
+      restockBody.innerHTML += `
+        <tr>
+          <td>${escapeHtml(item.sku)}</td>
+          <td>${escapeHtml(item.nama_produk)}</td>
+          <td>${formatNumber(stokAkhir)}</td>
+          <td><span class="status-badge ${statusClass}">${label}</span></td>
+        </tr>
+      `;
+    }
+  });
+
+  if (!filteredItems.length) {
+    body.innerHTML = `<tr><td colspan="8">Tidak ada data persediaan pada kategori ini.</td></tr>`;
+    restockBody.innerHTML = `<tr><td colspan="4">Tidak ada data restock pada kategori ini.</td></tr>`;
+  } else if (!restockBody.innerHTML) {
+    restockBody.innerHTML = `<tr><td colspan="4">Tidak ada item restock pada kategori ini.</td></tr>`;
+  }
+
+  setText("persediaan_total_sku", formatNumber(filteredItems.length));
+  setText("persediaan_total_stok", formatNumber(totalStok));
+  setText("persediaan_low_stock", formatNumber(lowStock));
+  setText("persediaan_out_stock", formatNumber(outStock));
+}
+
+function selectPersediaanCategory(event, category) {
+  state.persediaanCategory = category;
+  document.querySelectorAll("#persediaanCategoryTabs button")
+    .forEach(button => button.classList.remove("active-mini-tab"));
+  event?.target?.classList.add("active-mini-tab");
+  renderPersediaanTables();
 }
 
 async function loadAudit() {

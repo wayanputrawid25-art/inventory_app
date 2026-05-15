@@ -324,6 +324,13 @@
         </div>
 
         <div id="persediaanStock" class="module-content" style="display:none;">
+          <div class="mini-tab-strip persediaan-category-tabs" id="persediaanCategoryTabs">
+            <button type="button" class="active-mini-tab" onclick="selectPersediaanCategory(event, 'all')">Semua</button>
+            <button type="button" onclick="selectPersediaanCategory(event, 'modul')">Modul</button>
+            <button type="button" onclick="selectPersediaanCategory(event, 'seragam')">Seragam</button>
+            <button type="button" onclick="selectPersediaanCategory(event, 'poster')">Poster</button>
+            <button type="button" onclick="selectPersediaanCategory(event, 'lain-lain')">Lain-lain</button>
+          </div>
           <div class="table-shell table-shell-modern">
             <table class="table table-modern">
               <thead>

@@ -309,6 +309,34 @@ button:hover {
   margin: 18px 0 0;
 }
 
+.mini-tab-strip {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.mini-tab-strip button {
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 245, 237, 0.98));
+  color: var(--muted);
+  border: 1px solid rgba(255, 189, 165, 0.82);
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(42, 31, 33, 0.04);
+}
+
+.mini-tab-strip button:hover {
+  background: linear-gradient(180deg, #fffaf5 0%, #fff0e7 100%);
+}
+
+.active-mini-tab {
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong)) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 10px 22px rgba(184, 92, 56, 0.22);
+}
+
 .tab-menu button,
 .subtab-menu button {
   padding: 11px 18px;
