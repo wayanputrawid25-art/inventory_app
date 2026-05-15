@@ -6,7 +6,8 @@ async function getTableAvailability() {
       to_regclass('public.outlet_stok_awal') IS NOT NULL AS has_outlet_stok_awal,
       to_regclass('public.outlet_stok_masuk') IS NOT NULL AS has_outlet_stok_masuk,
       to_regclass('public.outlet_penjualan') IS NOT NULL AS has_outlet_penjualan,
-      to_regclass('public.outlet_stok_penyesuaian') IS NOT NULL AS has_outlet_stok_penyesuaian
+      to_regclass('public.outlet_stok_penyesuaian') IS NOT NULL AS has_outlet_stok_penyesuaian,
+      to_regclass('public.vw_outlet_stock_monthly') IS NOT NULL AS has_outlet_stock_view
   `);
 
   return result.rows[0];
@@ -21,6 +22,7 @@ export default async function handler(req, res) {
       && availability?.has_outlet_stok_masuk
       && availability?.has_outlet_penjualan
       && availability?.has_outlet_stok_penyesuaian
+      && availability?.has_outlet_stock_view
     );
 
     if (dbReady) {
@@ -38,49 +40,24 @@ export default async function handler(req, res) {
             AND ($3::text = '' OR sku = $3)
           GROUP BY nama_outlet
         ),
-        opening AS (
-          SELECT outlet_id, COALESCE(SUM(qty_awal), 0) AS opening_stok
-          FROM outlet_stok_awal
+        rolling AS (
+          SELECT
+            nama_outlet,
+            SUM(stok_akhir) AS stok_akhir
+          FROM vw_outlet_stock_monthly
           WHERE periode = (SELECT start_date FROM params)
             AND ($3::text = '' OR sku = $3)
-          GROUP BY outlet_id
-        ),
-        masuk AS (
-          SELECT outlet_id, COALESCE(SUM(qty), 0) AS stok_masuk
-          FROM outlet_stok_masuk
-          WHERE tanggal >= (SELECT start_date FROM params)
-            AND tanggal < (SELECT end_date FROM params)
-            AND ($3::text = '' OR sku = $3)
-          GROUP BY outlet_id
-        ),
-        keluar AS (
-          SELECT outlet_id, COALESCE(SUM(qty), 0) AS stok_keluar
-          FROM outlet_penjualan
-          WHERE tanggal >= (SELECT start_date FROM params)
-            AND tanggal < (SELECT end_date FROM params)
-            AND ($3::text = '' OR sku = $3)
-          GROUP BY outlet_id
-        ),
-        adjust AS (
-          SELECT outlet_id, COALESCE(SUM(qty), 0) AS penyesuaian
-          FROM outlet_stok_penyesuaian
-          WHERE tanggal >= (SELECT start_date FROM params)
-            AND tanggal < (SELECT end_date FROM params)
-            AND ($3::text = '' OR sku = $3)
-          GROUP BY outlet_id
+          GROUP BY nama_outlet
         ),
         merged AS (
           SELECT
             o.id AS outlet_id,
             o.nama_outlet,
             COALESCE(ws.qty_transaksi, 0) AS qty_transaksi,
-            COALESCE(op.opening_stok, 0) + COALESCE(ms.stok_masuk, 0) - COALESCE(kl.stok_keluar, 0) + COALESCE(ad.penyesuaian, 0) AS stok_akhir
+            COALESCE(rg.stok_akhir, 0) AS stok_akhir
           FROM outlet o
           LEFT JOIN warehouse_sales_month ws ON ws.nama_outlet = o.nama_outlet
-          LEFT JOIN opening op ON op.outlet_id = o.id
-          LEFT JOIN masuk ms ON ms.outlet_id = o.id
-          LEFT JOIN keluar kl ON kl.outlet_id = o.id
-          LEFT JOIN adjust ad ON ad.outlet_id = o.id
+          LEFT JOIN rolling rg ON rg.nama_outlet = o.nama_outlet
         )
         SELECT
           outlet_id,
@@ -142,64 +119,22 @@ export default async function handler(req, res) {
             LIMIT 1
           ),
           opening AS (
-            SELECT sku, COALESCE(SUM(qty_awal), 0) AS opening_stok
-            FROM outlet_stok_awal
-            WHERE outlet_id = (SELECT id FROM target_outlet)
+            SELECT *
+            FROM vw_outlet_stock_monthly
+            WHERE nama_outlet = $4
               AND periode = (SELECT start_date FROM params)
               AND ($3::text = '' OR sku = $3)
-            GROUP BY sku
-          ),
-          masuk AS (
-            SELECT sku, COALESCE(SUM(qty), 0) AS stok_masuk
-            FROM outlet_stok_masuk
-            WHERE outlet_id = (SELECT id FROM target_outlet)
-              AND tanggal >= (SELECT start_date FROM params)
-              AND tanggal < (SELECT end_date FROM params)
-              AND ($3::text = '' OR sku = $3)
-            GROUP BY sku
-          ),
-          keluar AS (
-            SELECT sku, COALESCE(SUM(qty), 0) AS stok_keluar
-            FROM outlet_penjualan
-            WHERE outlet_id = (SELECT id FROM target_outlet)
-              AND tanggal >= (SELECT start_date FROM params)
-              AND tanggal < (SELECT end_date FROM params)
-              AND ($3::text = '' OR sku = $3)
-            GROUP BY sku
-          ),
-          adjust AS (
-            SELECT sku, COALESCE(SUM(qty), 0) AS penyesuaian
-            FROM outlet_stok_penyesuaian
-            WHERE outlet_id = (SELECT id FROM target_outlet)
-              AND tanggal >= (SELECT start_date FROM params)
-              AND tanggal < (SELECT end_date FROM params)
-              AND ($3::text = '' OR sku = $3)
-            GROUP BY sku
-          ),
-          keys AS (
-            SELECT sku FROM opening
-            UNION
-            SELECT sku FROM masuk
-            UNION
-            SELECT sku FROM keluar
-            UNION
-            SELECT sku FROM adjust
           )
           SELECT
-            p.sku,
-            p.nama_produk,
-            COALESCE(op.opening_stok, 0) AS opening_stok,
-            COALESCE(ms.stok_masuk, 0) AS stok_masuk,
-            COALESCE(kl.stok_keluar, 0) AS stok_keluar,
-            COALESCE(ad.penyesuaian, 0) AS penyesuaian,
-            COALESCE(op.opening_stok, 0) + COALESCE(ms.stok_masuk, 0) - COALESCE(kl.stok_keluar, 0) + COALESCE(ad.penyesuaian, 0) AS stok_akhir
-          FROM keys k
-          JOIN produk p ON p.sku = k.sku
-          LEFT JOIN opening op ON op.sku = k.sku
-          LEFT JOIN masuk ms ON ms.sku = k.sku
-          LEFT JOIN keluar kl ON kl.sku = k.sku
-          LEFT JOIN adjust ad ON ad.sku = k.sku
-          ORDER BY p.nama_produk
+            sku,
+            nama_produk,
+            opening_stok,
+            stok_masuk,
+            stok_keluar,
+            penyesuaian,
+            stok_akhir
+          FROM opening
+          ORDER BY nama_produk
         `, [bulan, tahun, sku || "", selectedOutlet]);
 
         detail = detailResult.rows;

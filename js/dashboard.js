@@ -24,6 +24,7 @@ const state = {
     outlet_summary: [],
     movements: [],
     flags: [],
+    analysis: [],
     notes: []
   },
   opname: []
@@ -1093,17 +1094,20 @@ async function loadAudit() {
     const movements = toArray(state.audit.movements);
     const outletSummary = toArray(state.audit.outlet_summary);
     const flags = toArray(state.audit.flags);
+    const analysis = toArray(state.audit.analysis);
     const notes = toArray(state.audit.notes);
 
     setText("audit_total_log", formatNumber(summary.total_mutasi));
     setText("audit_penjualan_total", formatNumber(summary.stok_masuk_outlet));
     setText("audit_pembelian_total", formatNumber(summary.penjualan_outlet));
     setText("audit_qty_total", formatNumber(summary.qty_bergerak));
+    setText("audit_problem_outlet", formatNumber(summary.problem_outlet));
 
     const insightCards = document.getElementById("auditInsightCards");
     const outletBody = document.getElementById("auditOutletBody");
     const movementBody = document.getElementById("auditBody");
     const flagBody = document.getElementById("auditFlagBody");
+    const analysisBody = document.getElementById("auditAnalysisBody");
     const dbStatus = document.getElementById("auditDbStatus");
     const notePanel = document.getElementById("auditIntegrationNotes");
 
@@ -1111,6 +1115,7 @@ async function loadAudit() {
     outletBody.innerHTML = "";
     movementBody.innerHTML = "";
     flagBody.innerHTML = "";
+    if (analysisBody) analysisBody.innerHTML = "";
 
     const insightItems = [
       {
@@ -1126,6 +1131,12 @@ async function loadAudit() {
       {
         title: "Flag Audit",
         detail: `${formatNumber(flags.length)} indikator risiko terdeteksi dan perlu ditindaklanjuti.`
+      },
+      {
+        title: "Analisis Level",
+        detail: analysis.length
+          ? `${formatNumber(analysis.filter(item => Number(item.selisih || 0) !== 0).length)} baris level siswa tidak cocok dengan modul keluar outlet.`
+          : "Belum ada data analisis level siswa untuk periode ini."
       }
     ];
 
@@ -1187,9 +1198,31 @@ async function loadAudit() {
       flagBody.innerHTML = `<tr><td colspan="4">Belum ada flag audit pada periode ini.</td></tr>`;
     }
 
+    if (analysisBody) {
+      analysis.forEach(item => {
+        const diff = Number(item.selisih || 0);
+        const badgeClass = diff === 0 ? "status-safe" : diff > 0 ? "status-low" : "status-out";
+        analysisBody.innerHTML += `
+          <tr>
+            <td>${escapeHtml(item.nama_outlet || "-")}</td>
+            <td>${escapeHtml(item.level_code || "-")}</td>
+            <td>${formatNumber(item.jumlah_siswa)}</td>
+            <td>${formatNumber(item.modul_keluar)}</td>
+            <td>${formatNumber(item.target_modul)}</td>
+            <td>${formatNumber(diff)}</td>
+            <td><span class="status-badge ${badgeClass}">${escapeHtml(item.status || "-")}</span></td>
+          </tr>
+        `;
+      });
+
+      if (!analysis.length) {
+        analysisBody.innerHTML = `<tr><td colspan="7">Belum ada data analisis level siswa pada periode ini.</td></tr>`;
+      }
+    }
+
     dbStatus.textContent = state.audit.db_ready
-      ? "Siap dipakai. Modul audit outlet sudah bisa membaca tabel khusus outlet."
-      : "Belum lengkap. Tambahkan tabel outlet audit agar stok keluar outlet, penyesuaian, dan opname outlet bisa diawasi penuh.";
+      ? "Siap dipakai. Modul audit outlet sudah membaca rolling stock, stok keluar outlet, dan analisis level siswa."
+      : "Belum lengkap. Jalankan migrasi audit baru agar rolling stock outlet dan analisis level siswa aktif.";
 
     notePanel.innerHTML = `
       <h4>Instruksi Sinkron API & DB</h4>

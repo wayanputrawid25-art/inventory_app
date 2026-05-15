@@ -7,25 +7,40 @@ async function getTableAvailability() {
       to_regclass('public.outlet_stok_masuk') IS NOT NULL AS has_outlet_stok_masuk,
       to_regclass('public.outlet_penjualan') IS NOT NULL AS has_outlet_penjualan,
       to_regclass('public.outlet_stok_penyesuaian') IS NOT NULL AS has_outlet_stok_penyesuaian,
-      to_regclass('public.outlet_stok_opname') IS NOT NULL AS has_outlet_stok_opname
+      to_regclass('public.outlet_stok_opname') IS NOT NULL AS has_outlet_stok_opname,
+      to_regclass('public.produk_level_mapping') IS NOT NULL AS has_produk_level_mapping,
+      to_regclass('public.outlet_siswa_level_bulanan') IS NOT NULL AS has_outlet_siswa_level_bulanan,
+      to_regclass('public.vw_outlet_stock_monthly') IS NOT NULL AS has_outlet_stock_view,
+      to_regclass('public.vw_outlet_level_analysis') IS NOT NULL AS has_outlet_level_analysis_view
   `);
 
-  return result.rows[0];
+  return result.rows[0] || {};
+}
+
+function sumBy(rows, field) {
+  return rows.reduce((sum, item) => sum + Number(item?.[field] || 0), 0);
 }
 
 export default async function handler(req, res) {
   try {
     const { bulan, tahun, sku, outlet } = req.query;
     const availability = await getTableAvailability();
-    const dbReady = Boolean(
-      availability?.has_outlet_stok_awal
-      && availability?.has_outlet_stok_masuk
-      && availability?.has_outlet_penjualan
-      && availability?.has_outlet_stok_penyesuaian
+    const stockReady = Boolean(
+      availability.has_outlet_stok_awal
+      && availability.has_outlet_stok_masuk
+      && availability.has_outlet_penjualan
+      && availability.has_outlet_stok_penyesuaian
+      && availability.has_outlet_stock_view
     );
+    const analysisReady = Boolean(
+      availability.has_produk_level_mapping
+      && availability.has_outlet_siswa_level_bulanan
+      && availability.has_outlet_level_analysis_view
+    );
+    const dbReady = stockReady && analysisReady;
 
     if (dbReady) {
-      const [summaryResult, outletResult, movementResult, flagResult] = await Promise.all([
+      const [summaryResult, outletResult, movementResult, flagResult, analysisResult] = await Promise.all([
         pool.query(`
           WITH params AS (
             SELECT
@@ -33,107 +48,91 @@ export default async function handler(req, res) {
               (make_date($2::int, $1::int, 1) + interval '1 month')::date AS end_date
           ),
           movement_union AS (
-            SELECT tanggal, qty, 'warehouse_transfer' AS jenis
+            SELECT outlet_id, qty, 'warehouse_transfer' AS jenis
             FROM outlet_stok_masuk
             WHERE tanggal >= (SELECT start_date FROM params)
               AND tanggal < (SELECT end_date FROM params)
               AND ($3::text = '' OR sku = $3)
               AND ($4::text = '' OR outlet_id IN (SELECT id FROM outlet WHERE nama_outlet = $4))
             UNION ALL
-            SELECT tanggal, qty, 'outlet_sales' AS jenis
+            SELECT outlet_id, qty, 'outlet_sales' AS jenis
             FROM outlet_penjualan
             WHERE tanggal >= (SELECT start_date FROM params)
               AND tanggal < (SELECT end_date FROM params)
               AND ($3::text = '' OR sku = $3)
               AND ($4::text = '' OR outlet_id IN (SELECT id FROM outlet WHERE nama_outlet = $4))
             UNION ALL
-            SELECT tanggal, ABS(qty) AS qty, 'adjustment' AS jenis
+            SELECT outlet_id, ABS(qty) AS qty, 'adjustment' AS jenis
             FROM outlet_stok_penyesuaian
             WHERE tanggal >= (SELECT start_date FROM params)
               AND tanggal < (SELECT end_date FROM params)
               AND ($3::text = '' OR sku = $3)
               AND ($4::text = '' OR outlet_id IN (SELECT id FROM outlet WHERE nama_outlet = $4))
+          ),
+          stock_problem_outlets AS (
+            SELECT DISTINCT nama_outlet
+            FROM vw_outlet_stock_monthly
+            WHERE periode = (SELECT start_date FROM params)
+              AND ($3::text = '' OR sku = $3)
+              AND ($4::text = '' OR nama_outlet = $4)
+              AND (
+                stok_akhir < 0
+                OR (stok_keluar = 0 AND stok_masuk > 0 AND stok_akhir > 0)
+                OR ABS(penyesuaian) > GREATEST(stok_masuk * 0.25, 10)
+              )
+          ),
+          level_problem_outlets AS (
+            SELECT DISTINCT nama_outlet
+            FROM vw_outlet_level_analysis
+            WHERE periode = (SELECT start_date FROM params)
+              AND ($4::text = '' OR nama_outlet = $4)
+              AND (
+                $3::text = ''
+                OR level_code IN (
+                  SELECT level_code
+                  FROM produk_level_mapping
+                  WHERE sku = $3
+                )
+              )
+              AND selisih <> 0
+          ),
+          problem_outlets AS (
+            SELECT nama_outlet FROM stock_problem_outlets
+            UNION
+            SELECT nama_outlet FROM level_problem_outlets
           )
           SELECT
-            COUNT(*) AS total_mutasi,
-            COALESCE(SUM(CASE WHEN jenis = 'warehouse_transfer' THEN qty ELSE 0 END), 0) AS stok_masuk_outlet,
-            COALESCE(SUM(CASE WHEN jenis = 'outlet_sales' THEN qty ELSE 0 END), 0) AS penjualan_outlet,
-            COALESCE(SUM(qty), 0) AS qty_bergerak,
-            (
-              SELECT COUNT(DISTINCT outlet_id)
-              FROM (
-                SELECT outlet_id FROM outlet_stok_masuk
-                WHERE tanggal >= (SELECT start_date FROM params)
-                  AND tanggal < (SELECT end_date FROM params)
-                  AND ($4::text = '' OR outlet_id IN (SELECT id FROM outlet WHERE nama_outlet = $4))
-                UNION
-                SELECT outlet_id FROM outlet_penjualan
-                WHERE tanggal >= (SELECT start_date FROM params)
-                  AND tanggal < (SELECT end_date FROM params)
-                  AND ($4::text = '' OR outlet_id IN (SELECT id FROM outlet WHERE nama_outlet = $4))
-              ) outlets
-            ) AS total_outlet
-          FROM movement_union
+            COALESCE((SELECT COUNT(*) FROM movement_union), 0) AS total_mutasi,
+            COALESCE((SELECT SUM(qty) FROM movement_union WHERE jenis = 'warehouse_transfer'), 0) AS stok_masuk_outlet,
+            COALESCE((SELECT SUM(qty) FROM movement_union WHERE jenis = 'outlet_sales'), 0) AS penjualan_outlet,
+            COALESCE((SELECT SUM(qty) FROM movement_union), 0) AS qty_bergerak,
+            COALESCE((
+              SELECT COUNT(DISTINCT nama_outlet)
+              FROM vw_outlet_stock_monthly
+              WHERE periode = (SELECT start_date FROM params)
+                AND ($3::text = '' OR sku = $3)
+                AND ($4::text = '' OR nama_outlet = $4)
+            ), 0) AS total_outlet,
+            COALESCE((SELECT COUNT(*) FROM problem_outlets), 0) AS problem_outlet
         `, [bulan, tahun, sku || "", outlet || ""]),
         pool.query(`
           WITH params AS (
             SELECT make_date($2::int, $1::int, 1) AS start_date
-          ),
-          outlet_opening AS (
-            SELECT outlet_id, sku, COALESCE(SUM(qty_awal), 0) AS qty
-            FROM outlet_stok_awal
-            WHERE periode = (SELECT start_date FROM params)
-            GROUP BY outlet_id, sku
-          ),
-          stok_masuk AS (
-            SELECT outlet_id, sku, COALESCE(SUM(qty), 0) AS qty
-            FROM outlet_stok_masuk
-            WHERE tanggal >= (SELECT start_date FROM params)
-              AND tanggal < ((SELECT start_date FROM params) + interval '1 month')
-            GROUP BY outlet_id, sku
-          ),
-          stok_keluar AS (
-            SELECT outlet_id, sku, COALESCE(SUM(qty), 0) AS qty
-            FROM outlet_penjualan
-            WHERE tanggal >= (SELECT start_date FROM params)
-              AND tanggal < ((SELECT start_date FROM params) + interval '1 month')
-            GROUP BY outlet_id, sku
-          ),
-          penyesuaian AS (
-            SELECT outlet_id, sku, COALESCE(SUM(qty), 0) AS qty
-            FROM outlet_stok_penyesuaian
-            WHERE tanggal >= (SELECT start_date FROM params)
-              AND tanggal < ((SELECT start_date FROM params) + interval '1 month')
-            GROUP BY outlet_id, sku
-          ),
-          keys AS (
-            SELECT outlet_id, sku FROM outlet_opening
-            UNION
-            SELECT outlet_id, sku FROM stok_masuk
-            UNION
-            SELECT outlet_id, sku FROM stok_keluar
-            UNION
-            SELECT outlet_id, sku FROM penyesuaian
           )
           SELECT
-            o.nama_outlet,
-            p.sku,
-            p.nama_produk,
-            COALESCE(op.qty, 0) AS opening_stok,
-            COALESCE(msk.qty, 0) AS stok_masuk,
-            COALESCE(klr.qty, 0) AS stok_keluar,
-            COALESCE(adj.qty, 0) AS penyesuaian,
-            COALESCE(op.qty, 0) + COALESCE(msk.qty, 0) - COALESCE(klr.qty, 0) + COALESCE(adj.qty, 0) AS stok_akhir
-          FROM keys k
-          JOIN outlet o ON o.id = k.outlet_id
-          JOIN produk p ON p.sku = k.sku
-          LEFT JOIN outlet_opening op ON op.outlet_id = k.outlet_id AND op.sku = k.sku
-          LEFT JOIN stok_masuk msk ON msk.outlet_id = k.outlet_id AND msk.sku = k.sku
-          LEFT JOIN stok_keluar klr ON klr.outlet_id = k.outlet_id AND klr.sku = k.sku
-          LEFT JOIN penyesuaian adj ON adj.outlet_id = k.outlet_id AND adj.sku = k.sku
-          WHERE ($3::text = '' OR p.sku = $3)
-            AND ($4::text = '' OR o.nama_outlet = $4)
-          ORDER BY o.nama_outlet, p.nama_produk
+            nama_outlet,
+            sku,
+            nama_produk,
+            opening_stok,
+            stok_masuk,
+            stok_keluar,
+            penyesuaian,
+            stok_akhir
+          FROM vw_outlet_stock_monthly
+          WHERE periode = (SELECT start_date FROM params)
+            AND ($3::text = '' OR sku = $3)
+            AND ($4::text = '' OR nama_outlet = $4)
+          ORDER BY nama_outlet, nama_produk
         `, [bulan, tahun, sku || "", outlet || ""]),
         pool.query(`
           WITH params AS (
@@ -196,69 +195,87 @@ export default async function handler(req, res) {
               AND ($4::text = '' OR o.nama_outlet = $4)
           ) movement_log
           ORDER BY tanggal DESC, nama_outlet
-          LIMIT 300
+          LIMIT 500
         `, [bulan, tahun, sku || "", outlet || ""]),
         pool.query(`
           WITH params AS (
             SELECT make_date($2::int, $1::int, 1) AS start_date
           ),
-          stock_data AS (
+          stock_flags AS (
             SELECT
-              o.nama_outlet,
-              p.sku,
-              p.nama_produk,
-              COALESCE(op.qty_awal, 0) AS opening_stok,
-              COALESCE(ms.qty, 0) AS stok_masuk,
-              COALESCE(ks.qty, 0) AS stok_keluar,
-              COALESCE(ad.qty, 0) AS penyesuaian,
-              COALESCE(op.qty_awal, 0) + COALESCE(ms.qty, 0) - COALESCE(ks.qty, 0) + COALESCE(ad.qty, 0) AS stok_akhir
-            FROM outlet o
-            CROSS JOIN produk p
-            LEFT JOIN (
-              SELECT outlet_id, sku, SUM(qty_awal) AS qty_awal
-              FROM outlet_stok_awal
-              WHERE periode = (SELECT start_date FROM params)
-              GROUP BY outlet_id, sku
-            ) op ON op.outlet_id = o.id AND op.sku = p.sku
-            LEFT JOIN (
-              SELECT outlet_id, sku, SUM(qty) AS qty
-              FROM outlet_stok_masuk
-              WHERE tanggal >= (SELECT start_date FROM params)
-                AND tanggal < ((SELECT start_date FROM params) + interval '1 month')
-              GROUP BY outlet_id, sku
-            ) ms ON ms.outlet_id = o.id AND ms.sku = p.sku
-            LEFT JOIN (
-              SELECT outlet_id, sku, SUM(qty) AS qty
-              FROM outlet_penjualan
-              WHERE tanggal >= (SELECT start_date FROM params)
-                AND tanggal < ((SELECT start_date FROM params) + interval '1 month')
-              GROUP BY outlet_id, sku
-            ) ks ON ks.outlet_id = o.id AND ks.sku = p.sku
-            LEFT JOIN (
-              SELECT outlet_id, sku, SUM(qty) AS qty
-              FROM outlet_stok_penyesuaian
-              WHERE tanggal >= (SELECT start_date FROM params)
-                AND tanggal < ((SELECT start_date FROM params) + interval '1 month')
-              GROUP BY outlet_id, sku
-            ) ad ON ad.outlet_id = o.id AND ad.sku = p.sku
-            WHERE ($3::text = '' OR p.sku = $3)
-              AND ($4::text = '' OR o.nama_outlet = $4)
+              nama_outlet,
+              sku,
+              CASE
+                WHEN stok_akhir < 0 THEN 'STOK_MINUS'
+                WHEN stok_keluar = 0 AND stok_masuk > 0 AND stok_akhir > 0 THEN 'STOK_ADA_TAPI_TIDAK_TERJUAL'
+                WHEN ABS(penyesuaian) > GREATEST(stok_masuk * 0.25, 10) THEN 'PENYESUAIAN_TIDAK_WAJAR'
+              END AS flag,
+              CASE
+                WHEN stok_akhir < 0 THEN 'Stok rolling outlet minus pada bulan ini. Periksa input stok awal, penjualan outlet, atau penyesuaian.'
+                WHEN stok_keluar = 0 AND stok_masuk > 0 AND stok_akhir > 0 THEN 'Stok rolling outlet masih ada tetapi belum ada penjualan outlet tercatat.'
+                WHEN ABS(penyesuaian) > GREATEST(stok_masuk * 0.25, 10) THEN 'Penyesuaian outlet terlalu besar dibanding stok masuk bulan berjalan.'
+              END AS detail
+            FROM vw_outlet_stock_monthly
+            WHERE periode = (SELECT start_date FROM params)
+              AND ($3::text = '' OR sku = $3)
+              AND ($4::text = '' OR nama_outlet = $4)
+              AND (
+                stok_akhir < 0
+                OR (stok_keluar = 0 AND stok_masuk > 0 AND stok_akhir > 0)
+                OR ABS(penyesuaian) > GREATEST(stok_masuk * 0.25, 10)
+              )
+          ),
+          analysis_flags AS (
+            SELECT
+              nama_outlet,
+              '-' AS sku,
+              'SELISIH_LEVEL_SISWA' AS flag,
+              CONCAT('Level ', level_code, ': modul keluar ', modul_keluar, ' vs target ', target_modul, ' (selisih ', selisih, ').') AS detail
+            FROM vw_outlet_level_analysis
+            WHERE periode = (SELECT start_date FROM params)
+              AND ($4::text = '' OR nama_outlet = $4)
+              AND (
+                $3::text = ''
+                OR level_code IN (
+                  SELECT level_code
+                  FROM produk_level_mapping
+                  WHERE sku = $3
+                )
+              )
+              AND selisih <> 0
           )
-          SELECT nama_outlet, sku,
-            CASE
-              WHEN stok_akhir < 0 THEN 'STOK_MINUS'
-              WHEN stok_keluar = 0 AND stok_masuk > 0 THEN 'TIDAK_ADA_PENJUALAN_OUTLET'
-              WHEN ABS(penyesuaian) > GREATEST(stok_masuk * 0.25, 10) THEN 'PENYESUAIAN_TIDAK_WAJAR'
-            END AS flag,
-            CASE
-              WHEN stok_akhir < 0 THEN 'Stok akhir outlet minus. Periksa penjualan outlet, input transfer, atau indikasi selisih.'
-              WHEN stok_keluar = 0 AND stok_masuk > 0 THEN 'Outlet menerima stok tetapi belum ada penjualan outlet tercatat pada periode yang sama.'
-              WHEN ABS(penyesuaian) > GREATEST(stok_masuk * 0.25, 10) THEN 'Nilai penyesuaian melebihi ambang audit bulanan.'
-            END AS detail
-          FROM stock_data
-          WHERE (stok_akhir < 0 OR (stok_keluar = 0 AND stok_masuk > 0) OR ABS(penyesuaian) > GREATEST(stok_masuk * 0.25, 10))
-          ORDER BY nama_outlet, sku
-        `, [bulan, tahun, sku || "", outlet || ""])
+          SELECT * FROM stock_flags
+          UNION ALL
+          SELECT * FROM analysis_flags
+          ORDER BY nama_outlet, sku, flag
+        `, [bulan, tahun, sku || "", outlet || ""]),
+        analysisReady
+          ? pool.query(`
+              WITH params AS (
+                SELECT make_date($2::int, $1::int, 1) AS start_date
+              )
+              SELECT
+                nama_outlet,
+                level_code,
+                jumlah_siswa,
+                modul_keluar,
+                target_modul,
+                selisih,
+                status
+              FROM vw_outlet_level_analysis
+              WHERE periode = (SELECT start_date FROM params)
+                AND ($4::text = '' OR nama_outlet = $4)
+                AND (
+                  $3::text = ''
+                  OR level_code IN (
+                    SELECT level_code
+                    FROM produk_level_mapping
+                    WHERE sku = $3
+                  )
+                )
+              ORDER BY nama_outlet, level_code
+            `, [bulan, tahun, sku || "", outlet || ""])
+          : Promise.resolve({ rows: [] })
       ]);
 
       return res.status(200).json({
@@ -267,11 +284,12 @@ export default async function handler(req, res) {
         outlet_summary: outletResult.rows,
         movements: movementResult.rows,
         flags: flagResult.rows,
+        analysis: analysisResult.rows,
         notes: [
-          "Gunakan outlet_stok_masuk untuk setiap transfer warehouse ke outlet.",
-          "Gunakan outlet_penjualan untuk penjualan outlet agar stok keluar outlet tidak tercampur dengan penjualan warehouse.",
-          "Gunakan outlet_stok_penyesuaian untuk selisih audit, retur, atau koreksi stok outlet.",
-          "Isi outlet_stok_awal per outlet, SKU, dan periode agar opening stock audit bulanan konsisten."
+          "Penjualan warehouse ke outlet sekarang harus dimirror ke outlet_stok_masuk pada tanggal yang sama.",
+          "Opening outlet cukup diisi saat awal setup atau ketika ada koreksi. Bulan berikutnya akan memakai rolling closing bulan sebelumnya.",
+          "Stok keluar outlet dibaca langsung dari tabel outlet_penjualan agar audit tidak bercampur dengan penjualan warehouse.",
+          "Analisis level siswa memakai produk_level_mapping dan outlet_siswa_level_bulanan per outlet per bulan."
         ]
       });
     }
@@ -307,7 +325,8 @@ export default async function handler(req, res) {
             WHERE tanggal >= (SELECT start_date FROM params)
               AND tanggal < (SELECT end_date FROM params)
               AND ($4::text = '' OR nama_outlet = $4)
-          ) AS total_outlet
+          ) AS total_outlet,
+          0 AS problem_outlet
         FROM movement_union
       `, [bulan, tahun, sku || "", outlet || ""]),
       pool.query(`
@@ -404,7 +423,7 @@ export default async function handler(req, res) {
         nama_outlet: item.nama_outlet,
         sku: item.sku,
         flag: "DB_OUTLET_BELUM_LENGKAP",
-        detail: "Stok outlet belum bisa dipotong penjualan outlet karena tabel outlet_penjualan belum tersedia."
+        detail: "Stok outlet belum memakai rolling stock penuh karena tabel audit outlet baru belum selesai di-migrasi."
       }))
       .slice(0, 50);
 
@@ -414,11 +433,11 @@ export default async function handler(req, res) {
       outlet_summary: outletResult.rows,
       movements: movementResult.rows,
       flags,
+      analysis: [],
       notes: [
-        "Tambahkan tabel outlet_stok_awal, outlet_stok_masuk, outlet_penjualan, dan outlet_stok_penyesuaian.",
-        "Pastikan penjualan warehouse ke outlet di-mirror ke outlet_stok_masuk.",
-        "Import penjualan outlet ke outlet_penjualan agar stok akhir outlet tidak bias.",
-        "File rancangan SQL tersedia di db_audit_outlet_proposal.sql."
+        "Jalankan migration_neon_safe.sql agar rolling stock outlet dan analisis level siswa aktif.",
+        "Penjualan warehouse perlu dimirror ke outlet_stok_masuk agar stok masuk outlet otomatis tercatat.",
+        "Siapkan outlet_stok_awal, outlet_penjualan, produk_level_mapping, dan outlet_siswa_level_bulanan untuk audit penuh."
       ]
     });
   } catch (err) {

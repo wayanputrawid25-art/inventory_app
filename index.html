@@ -448,8 +448,36 @@
               <p>Qty Bergerak</p>
               <h2 id="audit_qty_total">0</h2>
             </div>
+            <div class="kpi-box kpi-dark">
+              <p>Outlet Bermasalah</p>
+              <h2 id="audit_problem_outlet">0</h2>
+            </div>
           </div>
           <div class="insight-grid top-space" id="auditInsightCards"></div>
+          <div class="top-space">
+            <div class="section-header detail-header">
+              <div>
+                <p class="section-eyebrow">Analisis Level</p>
+                <h3>Selisih Modul vs Jumlah Siswa</h3>
+              </div>
+            </div>
+            <div class="table-shell">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Outlet</th>
+                    <th>Level</th>
+                    <th>Jumlah Siswa</th>
+                    <th>Modul Keluar</th>
+                    <th>Target Modul</th>
+                    <th>Selisih</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="auditAnalysisBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <div id="auditOutletStock" class="module-content" style="display:none;">
