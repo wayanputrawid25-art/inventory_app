@@ -4,6 +4,8 @@ let chartTopOutlet = null;
 let chartOutletStatus = null;
 let currentMenu = "penjualan";
 let selectedSalesOutlet = "";
+const MENU_STORAGE_KEY = "inventoryActiveMenu";
+const VALID_MENUS = ["penjualan", "audit", "persediaan", "forecast", "opname"];
 
 const state = {
   produkOptions: [],
@@ -69,8 +71,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   selectPersediaanImport(null, "pembelian");
   await loadProdukOptions();
   await loadAuditOutletOptions();
-  selectMenu(null, "penjualan");
+  selectMenu(null, getSavedMenu());
 });
+
+function getSavedMenu() {
+  const savedMenu = window.localStorage.getItem(MENU_STORAGE_KEY);
+  return VALID_MENUS.includes(savedMenu) ? savedMenu : "penjualan";
+}
+
+function toggleMobileMenu() {
+  document.body.classList.toggle("mobile-menu-open");
+}
+
+function closeMobileMenu() {
+  document.body.classList.remove("mobile-menu-open");
+}
 
 function bindGlobalFilters() {
   document.getElementById("bulan")?.addEventListener("change", applyCurrentFilters);
@@ -498,7 +513,10 @@ function showOpnameTab(event, id) {
 }
 
 function selectMenu(event, menu) {
+  if (!VALID_MENUS.includes(menu)) menu = "penjualan";
   currentMenu = menu;
+  window.localStorage.setItem(MENU_STORAGE_KEY, menu);
+  closeMobileMenu();
   updatePageHeader(menu);
   updateFilterStatus();
 

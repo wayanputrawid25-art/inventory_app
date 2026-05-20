@@ -4,10 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CV EPIC Warehouse</title>
-  <link rel="stylesheet" href="/css/style.css?v=opname-20260520">
+  <link rel="stylesheet" href="/css/style.css?v=nav-20260520">
   <link rel="icon" type="image/png" href="/assets/logo.png">
 </head>
 <body>
+  <button type="button" class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Buka menu">
+    <i data-lucide="menu"></i>
+  </button>
+  <div class="mobile-menu-backdrop" onclick="closeMobileMenu()"></div>
+
   <aside class="sidebar">
     <div class="logo">
       <img src="/assets/logo.png" class="logo-img" alt="CV EPIC Warehouse">
@@ -952,7 +957,7 @@
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-  <script src="/js/dashboard.js?v=opname-20260520"></script>
+  <script src="/js/dashboard.js?v=nav-20260520"></script>
   <script>
     lucide.createIcons();
   </script>
