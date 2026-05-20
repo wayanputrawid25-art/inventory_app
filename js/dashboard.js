@@ -335,6 +335,102 @@ async function loadAuditOutletOptions() {
   }
 }
 
+function getSelectedBarcodeProduct() {
+  const raw = (document.getElementById("barcodeProductInput")?.value || "").trim();
+  if (!raw) return null;
+
+  const normalized = raw.toLowerCase();
+  return state.produkOptions.find(item => {
+    const label = `${item.sku} - ${item.nama_produk}`;
+    return label.toLowerCase() === normalized
+      || item.sku.toLowerCase() === normalized
+      || label.toLowerCase().includes(normalized);
+  }) || null;
+}
+
+function loadBarcodeGenerator() {
+  setText("productBarcodeValue", "-");
+  setText("rackBarcodeValue", "-");
+  const productSvg = document.getElementById("productBarcodeSvg");
+  const rackSvg = document.getElementById("rackBarcodeSvg");
+  if (productSvg) productSvg.innerHTML = "";
+  if (rackSvg) rackSvg.innerHTML = "";
+}
+
+function renderProductBarcode() {
+  const produk = getSelectedBarcodeProduct();
+  if (!produk) {
+    showToast("Produk tidak valid. Pilih dari daftar.", false);
+    return;
+  }
+
+  const barcodeValue = `PRD-${produk.sku}`;
+  setText("productBarcodeValue", barcodeValue);
+
+  const svg = document.getElementById("productBarcodeSvg");
+  if (svg && window.JsBarcode) {
+    svg.innerHTML = "";
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "120");
+    JsBarcode(svg, barcodeValue, {
+      format: "CODE128",
+      displayValue: true,
+      fontSize: 16,
+      height: 80,
+      width: 2,
+      margin: 10,
+      textMargin: 6
+    });
+  }
+}
+
+function renderRackBarcode() {
+  const kodeRak = (document.getElementById("barcodeRackInput")?.value || "").trim();
+  if (!kodeRak) {
+    showToast("Masukkan kode rak terlebih dahulu.", false);
+    return;
+  }
+
+  const barcodeValue = `RAK-${kodeRak}`;
+  setText("rackBarcodeValue", barcodeValue);
+
+  const svg = document.getElementById("rackBarcodeSvg");
+  if (svg && window.JsBarcode) {
+    svg.innerHTML = "";
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "120");
+    JsBarcode(svg, barcodeValue, {
+      format: "CODE128",
+      displayValue: true,
+      fontSize: 16,
+      height: 80,
+      width: 2,
+      margin: 10,
+      textMargin: 6
+    });
+  }
+}
+
+function downloadBarcodeSvg(svgId, prefix) {
+  const svg = document.getElementById(svgId);
+  if (!svg || !svg.innerHTML.trim()) {
+    showToast("Generate barcode terlebih dahulu sebelum mengunduh.", false);
+    return;
+  }
+
+  const serializer = new XMLSerializer();
+  const svgData = serializer.serializeToString(svg);
+  const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${prefix}-${Date.now()}.svg`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 function getQueryParams(includeProduct = true) {
   const qs = new URLSearchParams({
     bulan: getBulan(),
@@ -389,6 +485,7 @@ function showOpnameTab(event, id) {
   if (event) event.target.classList.add("active-tab");
 
   if (id === "opnameHistory") loadHistory();
+  if (id === "opnameBarcode") loadBarcodeGenerator();
 }
 
 function selectMenu(event, menu) {

@@ -681,6 +681,7 @@
           <button onclick="showOpnameTab(event,'opnameHistory')">History</button>
           <button onclick="showOpnameTab(event,'opnameImport')">Import</button>
           <button onclick="showOpnameTab(event,'opnameExport')">Export</button>
+          <button onclick="showOpnameTab(event,'opnameBarcode')">Barcode</button>
         </div>
 
         <div id="opnameKPI" class="opname-content">
@@ -822,6 +823,44 @@
           <h4>Export</h4>
           <button class="btn-secondary" onclick="exportOpname()">Download CSV</button>
         </div>
+
+        <div id="opnameBarcode" class="opname-content" style="display:none;">
+          <div class="barcode-generator-grid">
+            <div class="barcode-panel">
+              <h4>Barcode Produk</h4>
+              <p>Pilih produk untuk membuat barcode produk yang siap dicetak atau diunduh.</p>
+              <label class="filter-control">
+                <span>Produk</span>
+                <input type="text" id="barcodeProductInput" list="produkList" placeholder="Ketik SKU / nama produk">
+              </label>
+              <div class="section-actions top-space">
+                <button class="btn-primary" onclick="renderProductBarcode()">Generate Barcode Produk</button>
+                <button class="btn-secondary" onclick="downloadBarcodeSvg('productBarcodeSvg','produk')">Download SVG</button>
+              </div>
+              <div class="barcode-output top-space">
+                <p><strong>Barcode Value:</strong> <span id="productBarcodeValue">-</span></p>
+                <svg id="productBarcodeSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+              </div>
+            </div>
+
+            <div class="barcode-panel">
+              <h4>Barcode Rak</h4>
+              <p>Masukkan kode rak untuk membuat barcode rak yang bisa diunduh langsung.</p>
+              <label class="filter-control">
+                <span>Kode Rak</span>
+                <input type="text" id="barcodeRackInput" placeholder="Masukkan kode rak">
+              </label>
+              <div class="section-actions top-space">
+                <button class="btn-primary" onclick="renderRackBarcode()">Generate Barcode Rak</button>
+                <button class="btn-secondary" onclick="downloadBarcodeSvg('rackBarcodeSvg','rak')">Download SVG</button>
+              </div>
+              <div class="barcode-output top-space">
+                <p><strong>Barcode Value:</strong> <span id="rackBarcodeValue">-</span></p>
+                <svg id="rackBarcodeSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -838,6 +877,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="/js/dashboard.js"></script>
   <script>
     lucide.createIcons();
