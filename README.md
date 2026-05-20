@@ -118,6 +118,16 @@ npm run migrate-db
 
 > The migration script applies the MySQL schema from `database_schema_mysql_complete.sql` and copies legacy Postgres tables into MySQL.
 
+### 2.6. Sync Neon schema safely without deleting data
+
+The project now includes a safe Neon schema sync workflow.
+- `init-db.js` loads `migration_neon_safe.sql` and applies `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE IF NOT EXISTS` statements.
+- This updates schema structure without dropping existing Neon data.
+
+To use this from GitHub Actions, add the secret `DATABASE_URL` for Neon, then trigger the workflow in `.github/workflows/neon-schema-sync.yml`.
+
+> GitHub push saja tidak mengubah Neon; workflow harus dijalankan atau di-trigger agar schema sinkron.
+
 ### 3. Run Flask Server
 
 ```bash
