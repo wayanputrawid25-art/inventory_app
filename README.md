@@ -108,6 +108,16 @@ cp .env.example .env
 # Edit .env dengan database credentials Anda
 ```
 
+### 2.5. Run database migration from PostgreSQL to MySQL
+
+Set `DATABASE_URL` in your `.env` to the PostgreSQL source database, then run:
+```bash
+npm install
+npm run migrate-db
+```
+
+> The migration script applies the MySQL schema from `database_schema_mysql_complete.sql` and copies legacy Postgres tables into MySQL.
+
 ### 3. Run Flask Server
 
 ```bash
