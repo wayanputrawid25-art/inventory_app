@@ -1854,17 +1854,41 @@ async function importOpnameCSV() {
 }
 
 function loadScannerLibrary() {
+  const urls = [
+    'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js',
+    'https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js'
+  ];
+
   return new Promise((resolve, reject) => {
     if (window.Html5Qrcode) {
       resolve();
       return;
     }
 
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js';
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Gagal memuat library scanner'));
-    document.head.appendChild(script);
+    const tryLoad = index => {
+      if (index >= urls.length) {
+        reject(new Error('Gagal memuat library scanner dari semua CDN'));
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = urls[index];
+      script.async = true;
+      script.onload = () => {
+        if (window.Html5Qrcode) {
+          resolve();
+        } else {
+          tryLoad(index + 1);
+        }
+      };
+      script.onerror = () => {
+        script.remove();
+        tryLoad(index + 1);
+      };
+      document.head.appendChild(script);
+    };
+
+    tryLoad(0);
   });
 }
 
