@@ -364,7 +364,7 @@ function renderProductBarcode() {
     return;
   }
 
-  const barcodeValue = `PRD-${produk.sku}`;
+  const barcodeValue = produk.sku;
   setText("productBarcodeValue", barcodeValue);
 
   const svg = document.getElementById("productBarcodeSvg");
