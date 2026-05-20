@@ -1593,7 +1593,7 @@ async function loadStokSistem() {
       const stokLabel = item.stok_sistem ?? item.qty_stok ?? item.stok ?? 0;
 
       body.innerHTML += `
-        <tr id="row-${escapeHtml(skuValue)}" data-category="${category}" data-rak-barcode="${escapeHtml(item.rak_barcode || '')}" data-visible="false" data-scanned="false" style="display:none;">
+        <tr id="row-${escapeHtml(skuValue)}" data-category="${category}" data-rak-barcode="${escapeHtml(item.rak_barcode || '')}" data-visible="true" data-scanned="false">
           <td>${escapeHtml(skuValue)}</td>
           <td>${escapeHtml(namaValue)}</td>
           <td>${rakLabel}</td>
@@ -1697,6 +1697,12 @@ function hitungSelisih(sku) {
   updateSummary();
 }
 
+function hasOpnameInput(row) {
+  const sku = row.id.replace('row-', '');
+  const input = document.getElementById(`fisik-${sku}`);
+  return row.dataset.scanned === 'true' || (input && input.value !== '');
+}
+
 function updateSummary() {
   let totalSistem = 0;
   let totalFisik = 0;
@@ -1705,7 +1711,7 @@ function updateSummary() {
   let scannedCount = 0;
 
   document.querySelectorAll('#opnameBody tr').forEach(row => {
-    if (row.dataset.scanned !== 'true') return;
+    if (!hasOpnameInput(row)) return;
 
     const sku = row.id.replace('row-', '');
     const sistem = Number((document.getElementById(`sys-${sku}`)?.textContent || '0').replace(/\./g, '').replace(/,/g, ''));
@@ -1825,7 +1831,7 @@ async function simpanOpname() {
   const lokasi = document.getElementById('opnameGudang')?.value?.trim();
 
   const items = [...document.querySelectorAll('#opnameBody tr')]
-    .filter(row => row.dataset.scanned === 'true')
+    .filter(row => hasOpnameInput(row))
     .map(row => {
       const sku = row.children[0].textContent.trim();
       const sistem = Number((document.getElementById(`sys-${sku}`)?.textContent || '0').replace(/\./g, '').replace(/,/g, ''));
@@ -1835,7 +1841,7 @@ async function simpanOpname() {
     });
 
   if (!items.length) {
-    showToast('Tidak ada data opname yang sudah discan untuk disimpan', false);
+    showToast('Tidak ada data opname yang sudah diisi untuk disimpan', false);
     return;
   }
 
@@ -1868,7 +1874,7 @@ async function simpanOpname() {
 
 function exportOpname() {
   const rows = [...document.querySelectorAll('#opnameBody tr')]
-    .filter(row => row.dataset.scanned === 'true')
+    .filter(row => hasOpnameInput(row))
     .map(row => {
       const sku = row.children[0].textContent.trim();
       const kategori = row.children[3].textContent.trim();
@@ -1951,6 +1957,8 @@ async function importOpnameCSV() {
     }
 
     input.value = String(Number(stokFisikRaw));
+    input.closest('tr')?.setAttribute('data-scanned', 'true');
+    input.closest('tr')?.setAttribute('data-visible', 'true');
     hitungSelisih(skuRaw);
     applied += 1;
   });
@@ -2100,11 +2108,11 @@ function printOpname() {
   const gudang = document.getElementById('opnameGudang')?.value?.trim() || '................................';
   const category = document.getElementById('opnamePrintCategory')?.value || 'all';
   const rows = [...document.querySelectorAll('#opnameBody tr')]
-    .filter(row => row.dataset.scanned === 'true')
+    .filter(row => hasOpnameInput(row))
     .filter(row => category === 'all' || row.dataset.category === category);
 
   if (!rows.length) {
-    showToast('Tidak ada data opname yang sudah discan untuk kategori yang dipilih', false);
+    showToast('Tidak ada data opname yang sudah diisi untuk kategori yang dipilih', false);
     return;
   }
 

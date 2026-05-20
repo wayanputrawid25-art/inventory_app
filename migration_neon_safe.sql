@@ -81,10 +81,13 @@ CREATE TABLE IF NOT EXISTS stok_opname (
   tanggal DATE NOT NULL,
   total_item INTEGER NOT NULL DEFAULT 0,
   total_selisih INTEGER NOT NULL DEFAULT 0,
+  total_item_selisih INTEGER NOT NULL DEFAULT 0,
+  total_selisih_net INTEGER NOT NULL DEFAULT 0,
   checker VARCHAR(150),
   lokasi VARCHAR(150),
   keterangan TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS stok_opname_detail (
@@ -96,6 +99,34 @@ CREATE TABLE IF NOT EXISTS stok_opname_detail (
   selisih INTEGER NOT NULL,
   input_at TIMESTAMP DEFAULT NOW()
 );
+
+ALTER TABLE stok_opname
+  ADD COLUMN IF NOT EXISTS total_item_selisih INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_selisih_net INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+
+ALTER TABLE stok_opname_detail
+  ADD COLUMN IF NOT EXISTS input_at TIMESTAMP DEFAULT NOW();
+
+WITH opname_agg AS (
+  SELECT
+    opname_id,
+    COUNT(*)::integer AS total_item,
+    COUNT(*) FILTER (WHERE selisih <> 0)::integer AS total_item_selisih,
+    COALESCE(SUM(ABS(selisih)), 0)::integer AS total_selisih_abs,
+    COALESCE(SUM(selisih), 0)::integer AS total_selisih_net
+  FROM stok_opname_detail
+  GROUP BY opname_id
+)
+UPDATE stok_opname h
+SET
+  total_item = opname_agg.total_item,
+  total_selisih = opname_agg.total_selisih_abs,
+  total_item_selisih = opname_agg.total_item_selisih,
+  total_selisih_net = opname_agg.total_selisih_net,
+  updated_at = NOW()
+FROM opname_agg
+WHERE h.id = opname_agg.opname_id;
 
 CREATE TABLE IF NOT EXISTS outlet_stok_awal (
   id SERIAL PRIMARY KEY,
@@ -191,6 +222,12 @@ CREATE INDEX IF NOT EXISTS idx_pembelian_tanggal_sku
 
 CREATE INDEX IF NOT EXISTS idx_penyesuaian_tanggal_sku
   ON stok_penyesuaian (tanggal, sku);
+
+CREATE INDEX IF NOT EXISTS idx_stok_opname_tanggal
+  ON stok_opname (tanggal DESC);
+
+CREATE INDEX IF NOT EXISTS idx_stok_opname_detail_opname
+  ON stok_opname_detail (opname_id, sku);
 
 CREATE INDEX IF NOT EXISTS idx_outlet_stok_awal_periode
   ON outlet_stok_awal (periode, outlet_id, sku);

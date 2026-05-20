@@ -123,8 +123,16 @@ npm run migrate-db
 The project now includes a safe Neon schema sync workflow.
 - `init-db.js` loads `migration_neon_safe.sql` and applies `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE IF NOT EXISTS` statements.
 - This updates schema structure without dropping existing Neon data.
+- The Flask backend also reads the same Neon `DATABASE_URL`; when it is set, `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_PORT` are ignored.
 
 To use this from GitHub Actions, add the secret `DATABASE_URL` for Neon, then trigger the workflow in `.github/workflows/neon-schema-sync.yml`.
+
+GitHub setup:
+1. Open your repository on GitHub.
+2. Go to **Settings > Secrets and variables > Actions > New repository secret**.
+3. Name the secret `DATABASE_URL`.
+4. Paste the Neon pooled or direct connection string, for example `postgresql://USER:PASSWORD@HOST.neon.tech/DBNAME?sslmode=require`.
+5. Run **Actions > Sync Neon Schema > Run workflow**.
 
 > GitHub push saja tidak mengubah Neon; workflow harus dijalankan atau di-trigger agar schema sinkron.
 

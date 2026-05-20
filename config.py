@@ -2,6 +2,26 @@
 import os
 from datetime import timedelta
 
+
+def _build_database_uri(env_var='DATABASE_URL'):
+    """Build SQLAlchemy database URI from Neon/Postgres or legacy MySQL env."""
+    database_url = os.environ.get(env_var)
+
+    if database_url:
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql+psycopg2://', 1)
+        elif database_url.startswith('postgresql://'):
+            database_url = database_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
+        return database_url
+
+    db_host = os.environ.get('DB_HOST', 'localhost')
+    db_user = os.environ.get('DB_USER', 'app_user')
+    db_password = os.environ.get('DB_PASSWORD', 'password')
+    db_name = os.environ.get('DB_NAME', 'cv_epic_warehouse_mysql')
+    db_port = int(os.environ.get('DB_PORT', 3306))
+    return f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+
+
 class Config:
     """Base configuration"""
     # Flask
@@ -17,9 +37,7 @@ class Config:
     DB_NAME = os.environ.get('DB_NAME', 'cv_epic_warehouse_mysql')
     DB_PORT = int(os.environ.get('DB_PORT', 3306))
     
-    SQLALCHEMY_DATABASE_URI = (
-        f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    )
+    SQLALCHEMY_DATABASE_URI = _build_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_size': 10,
@@ -79,8 +97,10 @@ class TestingConfig(Config):
     TESTING = True
     DB_NAME = 'cv_epic_warehouse_test'
     SQLALCHEMY_DATABASE_URI = (
-        f"mysql+pymysql://{Config.DB_USER}:{Config.DB_PASSWORD}@"
-        f"{Config.DB_HOST}:{Config.DB_PORT}/{DB_NAME}"
+        _build_database_uri('TEST_DATABASE_URL')
+        if os.environ.get('TEST_DATABASE_URL')
+        else f"mysql+pymysql://{Config.DB_USER}:{Config.DB_PASSWORD}@"
+             f"{Config.DB_HOST}:{Config.DB_PORT}/{DB_NAME}"
     )
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(seconds=300)
     WTF_CSRF_ENABLED = False

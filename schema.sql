@@ -51,10 +51,13 @@ CREATE TABLE IF NOT EXISTS stok_opname (
   tanggal DATE NOT NULL,
   total_item INTEGER NOT NULL DEFAULT 0,
   total_selisih INTEGER NOT NULL DEFAULT 0,
+  total_item_selisih INTEGER NOT NULL DEFAULT 0,
+  total_selisih_net INTEGER NOT NULL DEFAULT 0,
   checker VARCHAR(150),
   lokasi VARCHAR(150),
   keterangan TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS stok_opname_detail (
@@ -157,6 +160,8 @@ CREATE TABLE IF NOT EXISTS outlet_siswa_level_bulanan (
 CREATE INDEX IF NOT EXISTS idx_penjualan_tanggal_sku ON penjualan (tanggal, sku);
 CREATE INDEX IF NOT EXISTS idx_pembelian_tanggal_sku ON pembelian (tanggal, sku);
 CREATE INDEX IF NOT EXISTS idx_penyesuaian_tanggal_sku ON stok_penyesuaian (tanggal, sku);
+CREATE INDEX IF NOT EXISTS idx_stok_opname_tanggal ON stok_opname (tanggal DESC);
+CREATE INDEX IF NOT EXISTS idx_stok_opname_detail_opname ON stok_opname_detail (opname_id, sku);
 CREATE INDEX IF NOT EXISTS idx_outlet_stok_masuk_tanggal ON outlet_stok_masuk (tanggal, outlet_id, sku);
 CREATE INDEX IF NOT EXISTS idx_outlet_penjualan_tanggal ON outlet_penjualan (tanggal, outlet_id, sku);
 CREATE INDEX IF NOT EXISTS idx_outlet_penyesuaian_tanggal ON outlet_stok_penyesuaian (tanggal, outlet_id, sku);
