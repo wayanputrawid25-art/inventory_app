@@ -368,10 +368,11 @@ button:hover {
 .opname-table th,
 .opname-table td {
   border-color: rgba(255, 255, 255, 0.06);
+  color: #2c2c2c;
 }
 
 .opname-table thead tr {
-  background: rgba(255, 255, 255, 0.04);
+  background: #fff9f3;
 }
 
 .opname-table tbody tr {
@@ -422,7 +423,7 @@ button:hover {
 }
 
 .opname-table td {
-  color: #eef2ff;
+  color: #2c2c2c;
 }
 
 .row-problem {
