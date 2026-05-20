@@ -11,6 +11,13 @@ async function initDB() {
     // Execute schema
     await pool.query(schema);
 
+    // Ensure new columns exist in existing database
+    await pool.query(`
+      ALTER TABLE stok_opname ADD COLUMN IF NOT EXISTS checker VARCHAR(150);
+      ALTER TABLE stok_opname ADD COLUMN IF NOT EXISTS lokasi VARCHAR(150);
+      ALTER TABLE stok_opname_detail ADD COLUMN IF NOT EXISTS input_at TIMESTAMP DEFAULT NOW();
+    `);
+
     console.log('Database initialized successfully!');
   } catch (err) {
     console.error('Error initializing database:', err);
