@@ -1184,6 +1184,388 @@ code {
   border-radius: 8px;
 }
 
+#opnameTab .opname-workspace {
+  background: #151719;
+  border: 1px solid rgba(168, 178, 162, 0.22);
+  color: #eef3ec;
+  overflow: hidden;
+}
+
+#opnameTab .opname-header {
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+#opnameTab .opname-header h3 {
+  color: #f8fafc;
+}
+
+#opnameTab .opname-subtitle {
+  display: block;
+  margin-top: 6px;
+  color: #a9b6c9;
+  max-width: 720px;
+}
+
+#opnameTab .opname-filter .filter-control span,
+#opnameTab .opname-panel .filter-control span {
+  color: #cbd5e1;
+}
+
+#opnameTab .tab-menu-opname {
+  gap: 8px;
+  padding: 8px;
+  border-radius: 18px;
+  background: rgba(21, 23, 25, 0.82);
+  border: 1px solid rgba(168, 178, 162, 0.16);
+}
+
+#opnameTab .tab-menu-opname button,
+#opnameTab .opname-quick-actions button,
+#opnameTab .scanner-actions button,
+#opnameTab .print-meta-grid button,
+#opnameTab .opname-import-box button,
+#opnameTab #opnameExport button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+}
+
+#opnameTab .tab-menu-opname button {
+  background: transparent;
+  color: #c6cec0;
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+#opnameTab .tab-menu-opname button svg,
+#opnameTab button svg {
+  width: 17px;
+  height: 17px;
+}
+
+#opnameTab .tab-menu-opname .active-tab {
+  background: #0f766e !important;
+  color: #fff !important;
+  box-shadow: 0 14px 32px rgba(15, 118, 110, 0.28);
+}
+
+#opnameTab .opname-content {
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #eef3ec;
+}
+
+#opnameTab .opname-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#opnameTab .opname-metric,
+#opnameTab .opname-panel {
+  border: 1px solid rgba(168, 178, 162, 0.18);
+  background: linear-gradient(180deg, rgba(33, 39, 36, 0.96), rgba(22, 24, 25, 0.96));
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.24);
+}
+
+#opnameTab .opname-metric span,
+#opnameTab .opname-panel .section-eyebrow {
+  color: #7dd3c7;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  font-weight: 800;
+}
+
+#opnameTab .opname-metric h2 {
+  margin: 8px 0 6px;
+  color: #f8faf5;
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+
+#opnameTab .opname-metric p {
+  color: #aeb9aa;
+  font-size: 0.86rem;
+}
+
+#opnameTab .metric-alert {
+  border-color: rgba(248, 113, 113, 0.32);
+}
+
+#opnameTab .metric-warning {
+  border-color: rgba(250, 204, 21, 0.32);
+}
+
+#opnameTab .opname-dashboard-grid,
+#opnameTab .opname-work-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+#opnameTab .opname-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+#opnameTab .opname-panel-heading h4 {
+  margin: 2px 0 0;
+  color: #f8faf5;
+}
+
+#opnameTab .opname-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #d9fff8;
+  background: rgba(15, 118, 110, 0.18);
+  border: 1px solid rgba(45, 212, 191, 0.28);
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+#opnameTab .opname-progress-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(168, 178, 162, 0.18);
+}
+
+#opnameTab .opname-progress-track span {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #14b8a6, #f59e0b);
+  transition: width 0.24s ease;
+}
+
+#opnameTab .opname-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+#opnameTab .opname-summary div {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(18, 20, 21, 0.72);
+  color: #d5dccf;
+}
+
+#opnameTab .opname-summary b {
+  color: #fff;
+}
+
+#opnameTab .opname-quick-actions,
+#opnameTab .scanner-actions,
+#opnameTab .manual-scan-row,
+#opnameTab .opname-import-box {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#opnameTab .opname-quick-actions button {
+  flex: 1;
+  min-width: 138px;
+}
+
+#opnameTab input,
+#opnameTab select {
+  border-radius: 12px;
+  border-color: rgba(168, 178, 162, 0.28);
+  background: rgba(18, 20, 21, 0.74);
+  color: #f8faf5;
+}
+
+#opnameTab input::placeholder {
+  color: #9fa99b;
+}
+
+#opnameTab input:focus,
+#opnameTab select:focus {
+  background: rgba(18, 20, 21, 0.96);
+  border-color: #2dd4bf;
+  box-shadow: 0 0 0 4px rgba(45, 212, 191, 0.15);
+}
+
+#opnameTab .scanner-panel {
+  margin-top: 0;
+}
+
+#opnameTab .scanner-preview {
+  min-height: 260px;
+  background: #0d0f0e;
+  border-color: rgba(45, 212, 191, 0.22);
+}
+
+#opnameTab .manual-scan-row {
+  margin-top: 10px;
+}
+
+#opnameTab .manual-scan-row input,
+#opnameTab .scanner-summary input {
+  flex: 1;
+  min-width: 220px;
+}
+
+#opnameTab .print-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+#opnameTab .opname-tools {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(180px, 260px);
+  gap: 10px;
+  margin: 14px 0;
+}
+
+#opnameTab #opnameInput .opname-tools,
+#opnameTab #opnameInput .mini-tab-strip {
+  display: grid;
+}
+
+#opnameTab .mini-tab-strip {
+  grid-template-columns: repeat(5, minmax(0, auto));
+  align-items: center;
+  margin: 0 0 12px;
+}
+
+#opnameTab .mini-tab-strip button {
+  background: rgba(33, 39, 36, 0.9);
+  color: #d5dccf;
+  border-color: rgba(168, 178, 162, 0.22);
+  box-shadow: none;
+}
+
+#opnameTab .mini-tab-strip .active-mini-tab {
+  background: #0f766e !important;
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.24);
+}
+
+#opnameTab .table-wrapper,
+#opnameTab .table-shell {
+  border: 1px solid rgba(168, 178, 162, 0.18);
+  border-radius: 16px;
+  overflow: auto;
+  background: rgba(18, 20, 21, 0.66);
+}
+
+#opnameTab .opname-table,
+#opnameTab #opnameHistory .table,
+#opnameTab #opnameImport .table {
+  min-width: 820px;
+}
+
+#opnameTab .opname-table th,
+#opnameTab .opname-table td,
+#opnameTab #opnameHistory .table th,
+#opnameTab #opnameHistory .table td,
+#opnameTab #opnameImport .table th,
+#opnameTab #opnameImport .table td {
+  color: #dbe4f0;
+  border-color: rgba(168, 178, 162, 0.14);
+}
+
+#opnameTab .opname-table thead tr,
+#opnameTab #opnameHistory .table thead tr,
+#opnameTab #opnameImport .table thead tr {
+  background: rgba(33, 39, 36, 0.98);
+}
+
+#opnameTab .opname-table tbody tr:hover {
+  background: rgba(20, 184, 166, 0.1);
+}
+
+#opnameTab .input-opname {
+  width: 112px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+#opnameTab .active-opname-row {
+  background: rgba(20, 184, 166, 0.18) !important;
+  outline: 2px solid rgba(45, 212, 191, 0.42);
+}
+
+#opnameTab .counted-opname-row {
+  background: rgba(34, 197, 94, 0.09);
+}
+
+#opnameTab .row-problem {
+  background: rgba(248, 113, 113, 0.13) !important;
+}
+
+#opnameTab .selisih-plus {
+  color: #86efac;
+}
+
+#opnameTab .selisih-minus {
+  color: #fca5a5;
+}
+
+#opnameTab .barcode-generator-grid {
+  margin-top: 0;
+}
+
+#opnameTab .barcode-panel {
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(33, 39, 36, 0.96), rgba(22, 24, 25, 0.96));
+  border-color: rgba(168, 178, 162, 0.18);
+}
+
+#opnameTab .barcode-output svg {
+  border-radius: 12px;
+}
+
+@media (max-width: 1180px) {
+  #opnameTab .opname-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  #opnameTab .opname-dashboard-grid,
+  #opnameTab .opname-work-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  #opnameTab .opname-kpi-grid,
+  #opnameTab .opname-summary,
+  #opnameTab .opname-tools,
+  #opnameTab .mini-tab-strip {
+    grid-template-columns: 1fr;
+  }
+
+  #opnameTab .tab-menu-opname button {
+    flex: 1;
+  }
+}
+
 @media (max-width: 1180px) {
   .header-card,
   .flex,

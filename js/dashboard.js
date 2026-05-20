@@ -488,10 +488,13 @@ function showOpnameTab(event, id) {
 
   const target = document.getElementById(id);
   if (target) target.style.display = "block";
-  if (event) event.target.classList.add("active-tab");
+  const activeButton = event?.currentTarget
+    || [...document.querySelectorAll(".tab-menu-opname button")].find(button => button.getAttribute("onclick")?.includes(`'${id}'`));
+  activeButton?.classList.add("active-tab");
 
   if (id === "opnameHistory") loadHistory();
   if (id === "opnameBarcode") loadBarcodeGenerator();
+  if (window.lucide) lucide.createIcons();
 }
 
 function selectMenu(event, menu) {
@@ -1585,6 +1588,10 @@ async function loadStokSistem() {
     const body = document.getElementById('opnameBody');
     body.innerHTML = '';
 
+    if (!state.opname.length) {
+      body.innerHTML = `<tr><td colspan="7">Belum ada stok sistem pada periode ini.</td></tr>`;
+    }
+
     state.opname.forEach((item, index) => {
       const skuValue = item.sku || item.kode_barang || '';
       const namaValue = item.nama_barang || item.nama_produk || '-';
@@ -1639,10 +1646,13 @@ function hideAllOpnameRows() {
 }
 
 function showOpnameRow(row) {
-  hideAllOpnameRows();
+  document.querySelectorAll('#opnameBody tr').forEach(item => {
+    item.classList.remove('active-opname-row');
+  });
   row.dataset.visible = 'true';
   row.style.display = '';
   row.classList.add('active-opname-row');
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function handleOpnameInputKey(event, sku) {
@@ -1666,9 +1676,10 @@ function saveScannedOpnameRow(sku) {
   const row = document.getElementById(`row-${sku}`);
   if (row) {
     row.dataset.scanned = 'true';
-    row.dataset.visible = 'false';
-    row.style.display = 'none';
+    row.dataset.visible = 'true';
+    row.style.display = '';
     row.classList.remove('active-opname-row');
+    row.classList.add('counted-opname-row');
   }
 
   updateSummary();
@@ -1704,6 +1715,7 @@ function hasOpnameInput(row) {
 }
 
 function updateSummary() {
+  const totalSku = document.querySelectorAll('#opnameBody tr[id^="row-"]').length;
   let totalSistem = 0;
   let totalFisik = 0;
   let totalSelisih = 0;
@@ -1726,14 +1738,23 @@ function updateSummary() {
     if (selisih !== 0) problem += 1;
   });
 
-  setText('kpi_opname_total', formatNumber(scannedCount));
+  const remaining = Math.max(totalSku - scannedCount, 0);
+  const progress = totalSku ? Math.round((scannedCount / totalSku) * 100) : 0;
+
+  setText('kpi_opname_total', formatNumber(totalSku));
+  setText('kpi_opname_counted', formatNumber(scannedCount));
+  setText('kpi_opname_progress', `${progress}% progress`);
   setText('kpi_opname_sistem', formatNumber(totalSistem));
   setText('kpi_opname_fisik', formatNumber(totalFisik));
   setText('kpi_opname_selisih', formatNumber(totalSelisih));
   setText('kpi_opname_problem', formatNumber(problem));
+  setText('kpi_opname_remaining', `${formatNumber(remaining)} belum dihitung`);
   setText('sum_total', formatNumber(scannedCount));
   setText('sum_selisih', formatNumber(totalSelisih));
   setText('sum_problem', formatNumber(problem));
+
+  const progressBar = document.getElementById('opnameProgressBar');
+  if (progressBar) progressBar.style.width = `${progress}%`;
 }
 
 function filterOpname() {
@@ -1968,6 +1989,18 @@ async function importOpnameCSV() {
   document.querySelector('.tab-menu-opname button:nth-child(2)')?.classList.add('active-tab');
 }
 
+function applyManualOpnameScan() {
+  const input = document.getElementById('manualOpnameScan');
+  const value = input?.value?.trim();
+  if (!value) {
+    showToast('Isi SKU atau barcode produk terlebih dahulu', false);
+    return;
+  }
+
+  applyScannedOpname(value);
+  if (input) input.value = '';
+}
+
 function loadScannerLibrary() {
   const urls = [
     'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js',
@@ -2068,6 +2101,7 @@ function resetOpnameScanState() {
   if (resultEl) resultEl.value = '';
   const statusEl = document.getElementById('scanOpnameStatus');
   if (statusEl) statusEl.textContent = 'Mode scan: Barang';
+  setText('opnameLastScanBadge', 'Belum ada scan');
 }
 
 function setOpnameScannerMode(mode) {
@@ -2087,6 +2121,7 @@ function applyScannedOpname(barcode) {
 
     if (opnameScannerMode === 'rak' && rakBarcode && rakBarcode === normalized) {
       showOpnameRow(row);
+      setText('opnameLastScanBadge', `Rak: ${normalized}`);
       found = true;
     }
 
@@ -2094,6 +2129,7 @@ function applyScannedOpname(barcode) {
       showOpnameRow(row);
       const input = row.querySelector('.input-opname');
       input?.focus();
+      setText('opnameLastScanBadge', `Produk: ${sku}`);
       found = true;
     }
   });
