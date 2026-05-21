@@ -82,12 +82,15 @@ CREATE TABLE IF NOT EXISTS stok_opname_perintah (
   keterangan TEXT,
   status VARCHAR(30) NOT NULL DEFAULT 'menunggu',
   checker VARCHAR(150),
+  kategori_targets TEXT,
   opname_id INTEGER REFERENCES stok_opname(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   started_at TIMESTAMP,
   completed_at TIMESTAMP
 );
+
+ALTER TABLE stok_opname_perintah ADD COLUMN IF NOT EXISTS kategori_targets TEXT;
 
 ALTER TABLE stok_opname ADD COLUMN IF NOT EXISTS perintah_id INTEGER REFERENCES stok_opname_perintah(id) ON DELETE SET NULL;
 

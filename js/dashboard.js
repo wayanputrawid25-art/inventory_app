@@ -1902,6 +1902,8 @@ function filterOpname() {
     .forEach(button => button.classList.remove('active-mini-tab'));
   document.querySelector(`#opnameCategoryTabs button[onclick*="'${category}'"]`)?.classList.add('active-mini-tab');
 
+  const activeTargets = state.activePerintah?.kategori_targets || [];
+
   document.querySelectorAll('#opnameBody tr').forEach(row => {
     if (row.dataset.visible !== 'true') {
       row.style.display = 'none';
@@ -1910,8 +1912,13 @@ function filterOpname() {
 
     const matchText = row.textContent.toLowerCase().includes(keyword);
     const matchCategory = category === 'all' || row.dataset.category === category;
-    row.style.display = matchText && matchCategory ? '' : 'none';
+    const matchPerintahTarget = !activeTargets.length || activeTargets.includes(row.dataset.category);
+    row.style.display = matchText && matchCategory && matchPerintahTarget ? '' : 'none';
   });
+
+  if (typeof renderActivePerintahKategoriIndicator === 'function') {
+    renderActivePerintahKategoriIndicator();
+  }
 }
 
 function selectOpnameCategoryTab(event, category) {
@@ -2545,6 +2552,9 @@ function updateOpnameScanSummary() {
   setText('scanFisik', formatNumber(totalFisik));
   setText('scanSelisih', formatNumber(totalSelisih));
   refreshOpnameMetrics();
+  if (typeof renderActivePerintahKategoriIndicator === 'function') {
+    renderActivePerintahKategoriIndicator();
+  }
 }
 
 function loadScannerLibrary() {

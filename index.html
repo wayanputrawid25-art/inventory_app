@@ -786,10 +786,20 @@
                 <input type="text" id="perintahLokasi" placeholder="Gudang utama">
               </label>
             </div>
+            <div class="filter-control top-space">
+              <span>Kategori SO</span>
+              <div id="perintahKategoriChoices" class="perintah-kategori-choices">
+                <label class="perintah-kategori-choice"><input type="checkbox" name="perintahKategori" value="modul" checked> Modul</label>
+                <label class="perintah-kategori-choice"><input type="checkbox" name="perintahKategori" value="seragam" checked> Seragam</label>
+                <label class="perintah-kategori-choice"><input type="checkbox" name="perintahKategori" value="poster" checked> Poster</label>
+                <label class="perintah-kategori-choice"><input type="checkbox" name="perintahKategori" value="lain-lain" checked> Lain-lain</label>
+              </div>
+            </div>
             <label class="filter-control top-space">
               <span>Keterangan</span>
               <input type="text" id="perintahKeterangan" placeholder="Catatan perintah (opsional)">
             </label>
+            <div id="perintahKategoriIndicator" class="kategori-indicator-panel top-space"></div>
             <div class="section-actions top-space" id="perintahFormActions">
               <button type="button" class="btn-primary" id="perintahSubmitBtn" onclick="simpanPerintahOpname()"><i data-lucide="plus-circle"></i><span>Tambah Perintah SO</span></button>
               <button type="button" class="btn-secondary" id="perintahCancelEditBtn" onclick="resetPerintahForm()" style="display:none;"><i data-lucide="x"></i><span>Batal Edit</span></button>
@@ -808,6 +818,7 @@
                 </div>
               </div>
               <p class="opname-help-text">Klik kartu SO untuk mulai atau melanjutkan scan. Simpan hanya mencatat hasil; gunakan <strong>Sesuaikan Stok</strong> di detail untuk menerapkan selisih ke gudang. Filter bulan hanya untuk melihat progres.</p>
+              <div id="hasilKategoriIndicator" class="kategori-indicator-panel top-space"></div>
               <div id="hasilSoList" class="hasil-so-grid"></div>
             </div>
           </div>
@@ -821,6 +832,7 @@
                 </div>
                 <span id="hasilDetailStatusBadge" class="opname-pill">-</span>
               </div>
+              <div id="hasilDetailKategoriIndicator" class="kategori-indicator-panel top-space"></div>
               <div class="print-meta-grid" style="margin-bottom: 16px;">
                 <div><label>Tanggal</label><p id="hasilDetailDate" style="font-weight:600;margin:0;">-</p></div>
                 <div><label>SVP</label><p id="hasilDetailSvp" style="font-weight:600;margin:0;">-</p></div>
@@ -864,6 +876,7 @@
                 <p class="section-eyebrow">Perintah Aktif</p>
                 <h4 id="activeSoKode">-</h4>
                 <p id="activeSoMeta" class="opname-help-text" style="margin:0;"></p>
+                <div id="activeSoKategoriIndicator" class="kategori-indicator-panel top-space"></div>
               </div>
               <button type="button" class="btn-secondary" onclick="clearActivePerintah()"><i data-lucide="x"></i><span>Tutup</span></button>
             </div>
@@ -1086,7 +1099,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="/js/dashboard.js?v=opname-history-20260521e"></script>
-  <script src="/js/dashboard-opname-perintah.js?v=opname-history-20260521e"></script>
+  <script src="/js/dashboard-opname-perintah.js?v=opname-kategori-20260521"></script>
   <script>
     lucide.createIcons();
   </script>

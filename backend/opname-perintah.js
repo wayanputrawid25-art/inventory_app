@@ -1,11 +1,55 @@
 import pool from "../services/db.js";
+import {
+  buildKategoriProgress,
+  buildPeriodKategoriIndicator,
+  ensurePerintahKategoriColumn,
+  getKategoriCountedByOpname,
+  getKategoriTotalsForPeriod,
+  normalizeKategoriTargets,
+  serializeKategoriTargets
+} from "./opname-kategori-utils.js";
 
 function normalizeKodeSo(value) {
   return String(value || "").trim().toUpperCase();
 }
 
+async function enrichPerintahRows(rows, bulan, tahun) {
+  if (!rows.length) {
+    return { rows: [], period_kategori: buildPeriodKategoriIndicator([]) };
+  }
+
+  const totalsByKategori = await getKategoriTotalsForPeriod(bulan, tahun);
+  const countedMap = await getKategoriCountedByOpname(
+    rows.map((row) => row.opname_id).filter(Boolean)
+  );
+
+  const enriched = rows.map((row) => {
+    const kategori_targets = normalizeKategoriTargets(row.kategori_targets);
+    const kategori_progress = buildKategoriProgress(
+      kategori_targets,
+      totalsByKategori,
+      countedMap[row.opname_id] || {},
+      row.status
+    );
+
+    return {
+      ...row,
+      kategori_targets,
+      kategori_progress,
+      kategori_label: kategori_progress.map((item) => item.label).join(", ")
+    };
+  });
+
+  return {
+    rows: enriched,
+    period_kategori: buildPeriodKategoriIndicator(enriched)
+  };
+}
+
 export default async function handler(req, res) {
   try {
+    await ensurePerintahKategoriColumn();
+
     if (req.method === "GET") {
       const { id, kode_so, bulan, tahun } = req.query;
 
@@ -30,7 +74,9 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: "Perintah SO tidak ditemukan" });
         }
 
-        return res.status(200).json(result.rows[0]);
+        const row = result.rows[0];
+        const { rows: enrichedRows } = await enrichPerintahRows([row], row.bulan, row.tahun);
+        return res.status(200).json(enrichedRows[0]);
       }
 
       if (!bulan || !tahun) {
@@ -66,7 +112,16 @@ export default async function handler(req, res) {
         [Number(bulan), Number(tahun)]
       );
 
-      return res.status(200).json(listResult.rows);
+      const { rows, period_kategori } = await enrichPerintahRows(
+        listResult.rows,
+        Number(bulan),
+        Number(tahun)
+      );
+
+      return res.status(200).json({
+        items: rows,
+        period_kategori
+      });
     }
 
     if (req.method === "POST") {
@@ -107,12 +162,16 @@ export default async function handler(req, res) {
         const lokasi = String(body.lokasi || "").trim() || null;
         const keterangan = String(body.keterangan || "").trim() || null;
         const tanggal = body.tanggal_perintah || body.tanggal;
+        const kategoriTargets = serializeKategoriTargets(body.kategori_targets);
 
         if (!perintahId) {
           return res.status(400).json({ error: "perintah_id wajib" });
         }
         if (!kodeSo || !svpNama || !tanggal) {
           return res.status(400).json({ error: "kode_so, svp_nama, dan tanggal wajib diisi" });
+        }
+        if (!normalizeKategoriTargets(kategoriTargets).length) {
+          return res.status(400).json({ error: "Pilih minimal satu kategori SO" });
         }
 
         const dateObj = new Date(tanggal);
@@ -152,11 +211,12 @@ export default async function handler(req, res) {
             svp_nama = $5,
             lokasi = $6,
             keterangan = $7,
+            kategori_targets = $8,
             updated_at = NOW()
-          WHERE id = $8 AND status IN ('menunggu', 'proses', 'selesai')
+          WHERE id = $9 AND status IN ('menunggu', 'proses', 'selesai')
           RETURNING *
           `,
-          [kodeSo, tanggal, bulan, tahun, svpNama, lokasi, keterangan, perintahId]
+          [kodeSo, tanggal, bulan, tahun, svpNama, lokasi, keterangan, kategoriTargets, perintahId]
         );
 
         if (!updateResult.rows.length) {
@@ -174,9 +234,13 @@ export default async function handler(req, res) {
       const lokasi = String(body.lokasi || "").trim() || null;
       const keterangan = String(body.keterangan || "").trim() || null;
       const tanggal = body.tanggal_perintah || body.tanggal;
+      const kategoriTargets = serializeKategoriTargets(body.kategori_targets);
 
       if (!kodeSo || !svpNama || !tanggal) {
         return res.status(400).json({ error: "kode_so, svp_nama, dan tanggal wajib diisi" });
+      }
+      if (!normalizeKategoriTargets(kategoriTargets).length) {
+        return res.status(400).json({ error: "Pilih minimal satu kategori SO" });
       }
 
       const dateObj = new Date(tanggal);
@@ -191,12 +255,12 @@ export default async function handler(req, res) {
         `
         INSERT INTO stok_opname_perintah (
           kode_so, tanggal_perintah, bulan, tahun,
-          svp_nama, lokasi, keterangan, status
+          svp_nama, lokasi, keterangan, kategori_targets, status
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'menunggu')
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'menunggu')
         RETURNING *
         `,
-        [kodeSo, tanggal, bulan, tahun, svpNama, lokasi, keterangan]
+        [kodeSo, tanggal, bulan, tahun, svpNama, lokasi, keterangan, kategoriTargets]
       );
 
       return res.status(201).json({

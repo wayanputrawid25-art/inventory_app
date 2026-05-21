@@ -3,10 +3,19 @@
 const PERINTAH_STATUS_LABEL = {
   menunggu: { text: 'Menunggu', className: 'status-wait' },
   proses: { text: 'Proses', className: 'status-process' },
-  selesai: { text: 'Selesai', className: 'status-done' }
+  selesai: { text: 'Selesai', className: 'status-done' },
+  belum: { text: 'Belum Ada', className: 'status-wait' }
+};
+
+const KATEGORI_STATUS_LABEL = {
+  selesai: 'Selesai',
+  proses: 'Proses',
+  menunggu: 'Menunggu',
+  belum: 'Belum Ada'
 };
 
 state.editingPerintahId = null;
+state.periodKategoriIndicator = [];
 
 function initPerintahFormDefaults() {
   const tanggalInput = document.getElementById('perintahTanggal');
@@ -42,6 +51,115 @@ function setPerintahFormMode(editing) {
   if (window.lucide) lucide.createIcons();
 }
 
+function getSelectedPerintahKategori() {
+  return [...document.querySelectorAll('input[name="perintahKategori"]:checked')]
+    .map((input) => input.value)
+    .filter(Boolean);
+}
+
+function setPerintahKategoriCheckboxes(targets) {
+  const normalized = new Set(Array.isArray(targets) ? targets : []);
+  document.querySelectorAll('input[name="perintahKategori"]').forEach((input) => {
+    input.checked = normalized.size ? normalized.has(input.value) : true;
+  });
+}
+
+function renderKategoriIndicatorPanel(containerId, items, title = 'Indikator Selesai per Kategori') {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const list = Array.isArray(items) ? items : [];
+  if (!list.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = `
+    <h5>${escapeHtml(title)}</h5>
+    <div class="kategori-indicator-grid">
+      ${list.map((item) => {
+        const status = item.status || (item.selesai ? 'selesai' : 'menunggu');
+        const statusText = KATEGORI_STATUS_LABEL[status] || status;
+        const progress = Number(item.progress ?? 0);
+        const counted = Number(item.counted_sku ?? 0);
+        const total = Number(item.total_sku ?? 0);
+        const meta = total
+          ? `${formatNumber(counted)} / ${formatNumber(total)} SKU · ${progress}%`
+          : (item.perintah_count != null
+            ? `${formatNumber(item.perintah_count)} perintah`
+            : 'Belum ada perintah');
+
+        return `
+          <div class="kategori-indicator-chip status-${status}">
+            <strong>${escapeHtml(item.label || getOpnameCategoryLabel(item.kategori))}</strong>
+            <span>${escapeHtml(statusText)} · ${escapeHtml(meta)}</span>
+            <div class="kategori-progress-bar"><span style="width:${Math.min(progress, 100)}%"></span></div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderPeriodKategoriIndicators() {
+  renderKategoriIndicatorPanel('perintahKategoriIndicator', state.periodKategoriIndicator, 'Ringkasan Kategori — Periode Ini');
+  renderKategoriIndicatorPanel('hasilKategoriIndicator', state.periodKategoriIndicator, 'Ringkasan Kategori — Periode Ini');
+}
+
+function computeClientKategoriProgress(perintah) {
+  const targets = perintah?.kategori_targets || [];
+  if (!targets.length || !state.opname.length) return perintah?.kategori_progress || [];
+
+  const totals = {};
+  state.opname.forEach((product) => {
+    const nama = product.nama_barang || product.nama_produk || '';
+    const kategori = getOpnameCategory(nama);
+    if (!targets.includes(kategori)) return;
+    totals[kategori] = (totals[kategori] || 0) + 1;
+  });
+
+  const counted = {};
+  Object.keys(state.opnameScan).forEach((sku) => {
+    const product = state.opname.find((item) => (item.sku || item.kode_barang) === sku);
+    const nama = product?.nama_barang || product?.nama_produk || state.opnameScan[sku]?.nama || '';
+    const kategori = getOpnameCategory(nama);
+    if (!targets.includes(kategori)) return;
+    counted[kategori] = (counted[kategori] || 0) + 1;
+  });
+
+  return targets.map((kategori) => {
+    const total = totals[kategori] || 0;
+    const count = counted[kategori] || 0;
+    const progress = total ? Math.round((count / total) * 100) : 0;
+    let status = 'menunggu';
+    if (perintah?.status === 'selesai') {
+      status = total === 0 || count >= total ? 'selesai' : 'proses';
+    } else if (count > 0) {
+      status = count >= total && total > 0 ? 'selesai' : 'proses';
+    }
+
+    return {
+      kategori,
+      label: getOpnameCategoryLabel(kategori),
+      total_sku: total,
+      counted_sku: count,
+      progress,
+      selesai: status === 'selesai',
+      status
+    };
+  });
+}
+
+function renderActivePerintahKategoriIndicator() {
+  if (!state.activePerintah?.id) {
+    renderKategoriIndicatorPanel('activeSoKategoriIndicator', [], 'Progres per Kategori');
+    return;
+  }
+
+  const progress = computeClientKategoriProgress(state.activePerintah);
+  renderKategoriIndicatorPanel('activeSoKategoriIndicator', progress, 'Progres per Kategori (Perintah Aktif)');
+}
+
 function resetPerintahForm() {
   state.editingPerintahId = null;
   const editId = document.getElementById('perintahEditId');
@@ -50,6 +168,7 @@ function resetPerintahForm() {
   document.getElementById('perintahSvpNama').value = '';
   document.getElementById('perintahLokasi').value = '';
   document.getElementById('perintahKeterangan').value = '';
+  setPerintahKategoriCheckboxes(['modul', 'seragam', 'poster', 'lain-lain']);
   initPerintahFormDefaults();
   setPerintahFormMode(false);
 }
@@ -62,6 +181,7 @@ function isiFormPerintah(item) {
   document.getElementById('perintahSvpNama').value = item.svp_nama || '';
   document.getElementById('perintahLokasi').value = item.lokasi || '';
   document.getElementById('perintahKeterangan').value = item.keterangan || '';
+  setPerintahKategoriCheckboxes(item.kategori_targets || []);
   setPerintahFormMode(true);
   document.getElementById('perintahKodeSo')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -80,7 +200,10 @@ async function loadPerintahList() {
   try {
     const { bulan, tahun } = getOpnameRange();
     const qs = new URLSearchParams({ bulan, tahun });
-    state.perintahList = toArray(await fetchJson(`/api/opname-perintah?${qs.toString()}`));
+    const data = await fetchJson(`/api/opname-perintah?${qs.toString()}`);
+    state.perintahList = Array.isArray(data) ? data : (data?.items || []);
+    state.periodKategoriIndicator = Array.isArray(data?.period_kategori) ? data.period_kategori : [];
+    renderPeriodKategoriIndicators();
     renderPerintahListSection();
     renderHasilSoList();
 
@@ -116,13 +239,21 @@ function renderPerintahListSection() {
     const status = PERINTAH_STATUS_LABEL[item.status] || PERINTAH_STATUS_LABEL.menunggu;
     const editBtn = `<button type="button" class="btn-secondary btn-sm" onclick="editPerintahOpname(${item.id})"><i data-lucide="pencil"></i><span>Edit</span></button>`;
 
+    const kategoriHtml = (item.kategori_progress || []).map((cat) => `
+      <span class="opname-pill ${cat.selesai ? 'status-done' : cat.status === 'proses' ? 'status-process' : 'status-wait'}" title="${formatNumber(cat.counted_sku)}/${formatNumber(cat.total_sku)} SKU">
+        ${escapeHtml(cat.label)} ${cat.selesai ? '✓' : `${cat.progress}%`}
+      </span>
+    `).join('');
+
     return `
       <tr>
         <td><strong>${escapeHtml(item.kode_so)}</strong></td>
         <td>${formatDate(item.tanggal_perintah)}</td>
+        <td>${escapeHtml(item.kategori_label || '-')}</td>
         <td>${escapeHtml(item.svp_nama || '-')}</td>
         <td>${escapeHtml(item.lokasi || '-')}</td>
         <td><span class="opname-pill ${status.className}">${status.text}</span></td>
+        <td><div class="perintah-kategori-inline">${kategoriHtml || '<span class="opname-help-text">-</span>'}</div></td>
         <td class="perintah-table-actions">${editBtn}</td>
       </tr>
     `;
@@ -136,9 +267,11 @@ function renderPerintahListSection() {
           <tr>
             <th>Kode SO</th>
             <th>Tanggal</th>
+            <th>Kategori</th>
             <th>SVP</th>
             <th>Lokasi</th>
             <th>Status</th>
+            <th>Progres Kategori</th>
             <th>Aksi</th>
           </tr>
         </thead>
@@ -183,6 +316,12 @@ function renderSoCard(item, mode) {
     ? `<button type="button" class="hasil-so-card__edit" onclick="event.stopPropagation(); editPerintahOpname(${item.id})"><i data-lucide="pencil"></i> Edit</button>${detailBtn}`
     : '';
 
+  const kategoriChips = (item.kategori_progress || []).map((cat) => `
+    <span class="opname-pill ${cat.selesai ? 'status-done' : cat.status === 'proses' ? 'status-process' : 'status-wait'}">
+      ${escapeHtml(cat.label)} ${cat.selesai ? '✓' : `${cat.progress}%`}
+    </span>
+  `).join('');
+
   return `
     <div class="hasil-so-card ${status.className}" ${clickHandler}>
       <div class="hasil-so-card__head">
@@ -191,6 +330,7 @@ function renderSoCard(item, mode) {
       </div>
       <p class="hasil-so-card__meta">${formatDate(item.tanggal_perintah)} · SVP: ${escapeHtml(item.svp_nama || '-')}</p>
       <p class="hasil-so-card__meta">${escapeHtml(item.lokasi || 'Lokasi belum diisi')}</p>
+      <div class="perintah-kategori-inline">${kategoriChips}</div>
       ${item.status === 'selesai'
         ? `<p class="hasil-so-card__stat">Item: ${formatNumber(item.total_item || 0)} · Selisih: ${formatNumber(item.total_selisih || 0)}</p>`
         : `<p class="hasil-so-card__action">${actionLabel} →</p>`
@@ -207,8 +347,15 @@ async function simpanPerintahOpname() {
   const lokasi = document.getElementById('perintahLokasi')?.value?.trim();
   const keterangan = document.getElementById('perintahKeterangan')?.value?.trim();
 
+  const kategoriTargets = getSelectedPerintahKategori();
+
   if (!kodeSo || !tanggal || !svpNama) {
     showToast('Kode SO, tanggal, dan nama SVP wajib diisi', false);
+    return;
+  }
+
+  if (!kategoriTargets.length) {
+    showToast('Pilih minimal satu kategori SO', false);
     return;
   }
 
@@ -224,7 +371,8 @@ async function simpanPerintahOpname() {
       tahun,
       svp_nama: svpNama,
       lokasi,
-      keterangan
+      keterangan,
+      kategori_targets: kategoriTargets
     };
 
     if (isEdit) {
@@ -293,6 +441,7 @@ async function loadExistingOpnameScan(opnameId) {
 
   updateOpnameScanSummary();
   refreshOpnameMetrics();
+  renderActivePerintahKategoriIndicator();
 }
 
 async function activatePerintahForScan(perintah, options = {}) {
@@ -313,6 +462,7 @@ async function activatePerintahForScan(perintah, options = {}) {
 
     state.activePerintah = active;
     updateOpnameInputVisibility();
+    renderActivePerintahKategoriIndicator();
 
     const checkerEl = document.getElementById('opnameChecker');
     const gudangEl = document.getElementById('opnameGudang');
@@ -357,10 +507,14 @@ function updateOpnameInputVisibility() {
   if (active) active.style.display = hasPerintah ? 'block' : 'none';
 
   setText('activeSoKode', state.activePerintah?.kode_so || '-');
+  const kategoriLabel = (state.activePerintah?.kategori_targets || [])
+    .map((key) => getOpnameCategoryLabel(key))
+    .join(', ');
   const meta = state.activePerintah
-    ? `SVP: ${state.activePerintah.svp_nama || '-'} · ${formatDate(state.activePerintah.tanggal_perintah)} · ${state.activePerintah.lokasi || '-'}`
+    ? `SVP: ${state.activePerintah.svp_nama || '-'} · ${formatDate(state.activePerintah.tanggal_perintah)} · ${state.activePerintah.lokasi || '-'}${kategoriLabel ? ` · Kategori: ${kategoriLabel}` : ''}`
     : '';
   setText('activeSoMeta', meta);
+  renderActivePerintahKategoriIndicator();
 }
 
 function clearActivePerintah() {
@@ -370,6 +524,7 @@ function clearActivePerintah() {
   updateOpnameInputVisibility();
   updateOpnameScanSummary();
   refreshOpnameMetrics();
+  renderActivePerintahKategoriIndicator();
   showToast('Perintah SO ditutup');
 }
 
@@ -411,6 +566,11 @@ async function showHasilSoDetail(perintah) {
     }
 
     updateHasilSesuaikanButton(header, details);
+    renderKategoriIndicatorPanel(
+      'hasilDetailKategoriIndicator',
+      perintah.kategori_progress || [],
+      'Progres per Kategori'
+    );
 
     const tbody = document.getElementById('hasilDetailBody');
     tbody.innerHTML = details.length

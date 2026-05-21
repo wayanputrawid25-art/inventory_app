@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS stok_opname_perintah (
   keterangan TEXT,
   status VARCHAR(30) NOT NULL DEFAULT 'menunggu',
   checker VARCHAR(150),
+  kategori_targets TEXT,
   opname_id INTEGER REFERENCES stok_opname(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
