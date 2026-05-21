@@ -100,6 +100,79 @@ export default async function handler(req, res) {
         return res.status(200).json(result.rows[0]);
       }
 
+      if (action === "update") {
+        const perintahId = Number(body.perintah_id);
+        const kodeSo = normalizeKodeSo(body.kode_so);
+        const svpNama = String(body.svp_nama || "").trim();
+        const lokasi = String(body.lokasi || "").trim() || null;
+        const keterangan = String(body.keterangan || "").trim() || null;
+        const tanggal = body.tanggal_perintah || body.tanggal;
+
+        if (!perintahId) {
+          return res.status(400).json({ error: "perintah_id wajib" });
+        }
+        if (!kodeSo || !svpNama || !tanggal) {
+          return res.status(400).json({ error: "kode_so, svp_nama, dan tanggal wajib diisi" });
+        }
+
+        const dateObj = new Date(tanggal);
+        if (Number.isNaN(dateObj.getTime())) {
+          return res.status(400).json({ error: "Format tanggal tidak valid" });
+        }
+
+        const bulan = Number(body.bulan) || dateObj.getMonth() + 1;
+        const tahun = Number(body.tahun) || dateObj.getFullYear();
+
+        const existing = await pool.query(
+          `SELECT id, status, kode_so FROM stok_opname_perintah WHERE id = $1`,
+          [perintahId]
+        );
+
+        if (!existing.rows.length) {
+          return res.status(404).json({ error: "Perintah SO tidak ditemukan" });
+        }
+
+        if (existing.rows[0].status === "selesai") {
+          return res.status(400).json({ error: "Perintah yang sudah selesai tidak dapat diedit" });
+        }
+
+        const duplicate = await pool.query(
+          `SELECT id FROM stok_opname_perintah WHERE UPPER(kode_so) = $1 AND id <> $2`,
+          [kodeSo, perintahId]
+        );
+
+        if (duplicate.rows.length) {
+          return res.status(409).json({ error: "Kode SO sudah digunakan perintah lain" });
+        }
+
+        const updateResult = await pool.query(
+          `
+          UPDATE stok_opname_perintah
+          SET
+            kode_so = $1,
+            tanggal_perintah = $2,
+            bulan = $3,
+            tahun = $4,
+            svp_nama = $5,
+            lokasi = $6,
+            keterangan = $7,
+            updated_at = NOW()
+          WHERE id = $8 AND status IN ('menunggu', 'proses')
+          RETURNING *
+          `,
+          [kodeSo, tanggal, bulan, tahun, svpNama, lokasi, keterangan, perintahId]
+        );
+
+        if (!updateResult.rows.length) {
+          return res.status(400).json({ error: "Perintah tidak dapat diperbarui" });
+        }
+
+        return res.status(200).json({
+          message: `Perintah ${kodeSo} berhasil diperbarui`,
+          perintah: updateResult.rows[0]
+        });
+      }
+
       const kodeSo = normalizeKodeSo(body.kode_so);
       const svpNama = String(body.svp_nama || "").trim();
       const lokasi = String(body.lokasi || "").trim() || null;

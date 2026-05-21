@@ -762,10 +762,12 @@
             <div class="opname-panel-heading">
               <div>
                 <p class="section-eyebrow">SVP / Supervisor</p>
-                <h4>Buat Perintah Stok Opname</h4>
+                <h4 id="perintahFormTitle">Buat Perintah Stok Opname</h4>
               </div>
+              <span id="perintahFormModeBadge" class="opname-pill" style="display:none;">Mode Edit</span>
             </div>
-            <p class="opname-help-text">Buat perintah SO terlebih dahulu. Setelah dibuat, file akan muncul di tab <strong>Hasil SO</strong> untuk dikerjakan pelaksana.</p>
+            <p id="perintahFormHelp" class="opname-help-text">Buat atau edit perintah SO. Setelah disimpan, perintah muncul di tab <strong>Hasil SO</strong> untuk dikerjakan pelaksana.</p>
+            <input type="hidden" id="perintahEditId" value="">
             <div class="print-meta-grid">
               <label class="filter-control">
                 <span>Kode SO</span>
@@ -788,10 +790,11 @@
               <span>Keterangan</span>
               <input type="text" id="perintahKeterangan" placeholder="Catatan perintah (opsional)">
             </label>
-            <div class="section-actions top-space">
-              <button type="button" class="btn-primary" onclick="buatPerintahOpname()"><i data-lucide="plus-circle"></i><span>Buat Perintah SO</span></button>
+            <div class="section-actions top-space" id="perintahFormActions">
+              <button type="button" class="btn-primary" id="perintahSubmitBtn" onclick="simpanPerintahOpname()"><i data-lucide="plus-circle"></i><span>Tambah Perintah SO</span></button>
+              <button type="button" class="btn-secondary" id="perintahCancelEditBtn" onclick="resetPerintahForm()" style="display:none;"><i data-lucide="x"></i><span>Batal Edit</span></button>
             </div>
-            <div id="perintahRecentList" class="top-space"></div>
+            <div id="perintahListSection" class="top-space"></div>
           </div>
         </div>
 
@@ -1048,8 +1051,8 @@
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-  <script src="/js/dashboard.js?v=opname-fix-20260521c"></script>
-  <script src="/js/dashboard-opname-perintah.js?v=opname-fix-20260521c"></script>
+  <script src="/js/dashboard.js?v=opname-edit-20260521d"></script>
+  <script src="/js/dashboard-opname-perintah.js?v=opname-edit-20260521d"></script>
   <script>
     lucide.createIcons();
   </script>

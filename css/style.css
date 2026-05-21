@@ -1346,6 +1346,21 @@ button:hover {
   color: var(--primary-strong);
 }
 
+.hasil-so-card__edit {
+  margin-top: 10px;
+  padding: 6px 10px;
+  border: 1px solid #ffc4ae;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--primary-strong);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .hasil-so-card__stat {
   margin: 10px 0 0;
   font-size: 0.88rem;
@@ -1455,6 +1470,23 @@ button:hover {
   border-radius: var(--radius-md);
   border: 1px dashed #eed8cc;
   background: rgba(255, 255, 255, 0.6);
+}
+
+.perintah-table .perintah-table-actions {
+  white-space: nowrap;
+}
+
+.perintah-table .btn-sm {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#perintahFormActions {
+  flex-wrap: wrap;
 }
 
 #toast {

@@ -6,12 +6,79 @@ const PERINTAH_STATUS_LABEL = {
   selesai: { text: 'Selesai', className: 'status-done' }
 };
 
+state.editingPerintahId = null;
+
 function initPerintahFormDefaults() {
   const tanggalInput = document.getElementById('perintahTanggal');
-  if (tanggalInput && !tanggalInput.value) {
+  if (tanggalInput && !tanggalInput.value && !state.editingPerintahId) {
     const { startDate } = getOpnameRange();
     tanggalInput.value = startDate;
   }
+}
+
+function setPerintahFormMode(editing) {
+  const title = document.getElementById('perintahFormTitle');
+  const badge = document.getElementById('perintahFormModeBadge');
+  const submitBtn = document.getElementById('perintahSubmitBtn');
+  const cancelBtn = document.getElementById('perintahCancelEditBtn');
+  const kodeInput = document.getElementById('perintahKodeSo');
+
+  if (editing) {
+    if (title) title.textContent = 'Edit Perintah Stok Opname';
+    if (badge) badge.style.display = 'inline-flex';
+    if (submitBtn) {
+      submitBtn.innerHTML = '<i data-lucide="save"></i><span>Simpan Perubahan</span>';
+    }
+    if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+  } else {
+    if (title) title.textContent = 'Buat Perintah Stok Opname';
+    if (badge) badge.style.display = 'none';
+    if (submitBtn) {
+      submitBtn.innerHTML = '<i data-lucide="plus-circle"></i><span>Tambah Perintah SO</span>';
+    }
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (kodeInput) kodeInput.disabled = false;
+  }
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function resetPerintahForm() {
+  state.editingPerintahId = null;
+  const editId = document.getElementById('perintahEditId');
+  if (editId) editId.value = '';
+  document.getElementById('perintahKodeSo').value = '';
+  document.getElementById('perintahSvpNama').value = '';
+  document.getElementById('perintahLokasi').value = '';
+  document.getElementById('perintahKeterangan').value = '';
+  initPerintahFormDefaults();
+  setPerintahFormMode(false);
+}
+
+function isiFormPerintah(item) {
+  state.editingPerintahId = item.id;
+  document.getElementById('perintahEditId').value = String(item.id);
+  document.getElementById('perintahKodeSo').value = item.kode_so || '';
+  document.getElementById('perintahTanggal').value = String(item.tanggal_perintah || '').slice(0, 10);
+  document.getElementById('perintahSvpNama').value = item.svp_nama || '';
+  document.getElementById('perintahLokasi').value = item.lokasi || '';
+  document.getElementById('perintahKeterangan').value = item.keterangan || '';
+  setPerintahFormMode(true);
+  document.getElementById('perintahKodeSo')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function editPerintahOpname(id) {
+  const item = state.perintahList.find(row => row.id === id);
+  if (!item) {
+    showToast('Perintah SO tidak ditemukan', false);
+    return;
+  }
+  if (item.status === 'selesai') {
+    showToast('Perintah yang sudah selesai tidak dapat diedit', false);
+    return;
+  }
+  isiFormPerintah(item);
+  showOpnameTab(null, 'opnamePerintah');
 }
 
 async function loadPerintahList() {
@@ -19,16 +86,30 @@ async function loadPerintahList() {
     const { bulan, tahun } = getOpnameRange();
     const qs = new URLSearchParams({ bulan, tahun });
     state.perintahList = toArray(await fetchJson(`/api/opname-perintah?${qs.toString()}`));
-    renderPerintahRecentList();
+    renderPerintahListSection();
     renderHasilSoList();
+
+    if (state.editingPerintahId) {
+      const current = state.perintahList.find(item => item.id === state.editingPerintahId);
+      if (current && current.status !== 'selesai') {
+        isiFormPerintah(current);
+      } else {
+        resetPerintahForm();
+      }
+    }
+
+    if (state.activePerintah?.id) {
+      const active = state.perintahList.find(item => item.id === state.activePerintah.id);
+      if (active) state.activePerintah = active;
+    }
   } catch (error) {
     console.error('Load perintah error:', error);
     showToast(error.message || 'Gagal memuat perintah SO', false);
   }
 }
 
-function renderPerintahRecentList() {
-  const container = document.getElementById('perintahRecentList');
+function renderPerintahListSection() {
+  const container = document.getElementById('perintahListSection');
   if (!container) return;
 
   if (!state.perintahList.length) {
@@ -36,12 +117,45 @@ function renderPerintahRecentList() {
     return;
   }
 
+  const rows = state.perintahList.map(item => {
+    const status = PERINTAH_STATUS_LABEL[item.status] || PERINTAH_STATUS_LABEL.menunggu;
+    const canEdit = item.status === 'menunggu' || item.status === 'proses';
+    const editBtn = canEdit
+      ? `<button type="button" class="btn-secondary btn-sm" onclick="editPerintahOpname(${item.id})"><i data-lucide="pencil"></i><span>Edit</span></button>`
+      : '<span class="opname-help-text">—</span>';
+
+    return `
+      <tr>
+        <td><strong>${escapeHtml(item.kode_so)}</strong></td>
+        <td>${formatDate(item.tanggal_perintah)}</td>
+        <td>${escapeHtml(item.svp_nama || '-')}</td>
+        <td>${escapeHtml(item.lokasi || '-')}</td>
+        <td><span class="opname-pill ${status.className}">${status.text}</span></td>
+        <td class="perintah-table-actions">${editBtn}</td>
+      </tr>
+    `;
+  }).join('');
+
   container.innerHTML = `
-    <h4 class="top-space">Perintah Periode Ini</h4>
-    <div class="hasil-so-grid">
-      ${state.perintahList.slice(0, 8).map(item => renderSoCard(item, 'perintah')).join('')}
+    <h4>Daftar Perintah Periode Ini</h4>
+    <div class="table-shell top-space">
+      <table class="table perintah-table">
+        <thead>
+          <tr>
+            <th>Kode SO</th>
+            <th>Tanggal</th>
+            <th>SVP</th>
+            <th>Lokasi</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
     </div>
   `;
+
+  if (window.lucide) lucide.createIcons();
 }
 
 function renderHasilSoList() {
@@ -63,11 +177,16 @@ function renderHasilSoList() {
 
 function renderSoCard(item, mode) {
   const status = PERINTAH_STATUS_LABEL[item.status] || PERINTAH_STATUS_LABEL.menunggu;
+  const canEdit = item.status === 'menunggu' || item.status === 'proses';
   const actionLabel = item.status === 'selesai'
     ? 'Lihat Hasil'
     : (item.status === 'proses' ? 'Lanjut Scan' : 'Mulai Scan');
   const clickHandler = mode === 'hasil'
     ? `onclick="handleHasilSoClick(${item.id})"`
+    : '';
+
+  const editLink = mode === 'hasil' && canEdit
+    ? `<button type="button" class="hasil-so-card__edit" onclick="event.stopPropagation(); editPerintahOpname(${item.id})"><i data-lucide="pencil"></i> Edit</button>`
     : '';
 
   return `
@@ -82,11 +201,12 @@ function renderSoCard(item, mode) {
         ? `<p class="hasil-so-card__stat">Item: ${formatNumber(item.total_item || 0)} · Selisih: ${formatNumber(item.total_selisih || 0)}</p>`
         : `<p class="hasil-so-card__action">${actionLabel} →</p>`
       }
+      ${editLink}
     </div>
   `;
 }
 
-async function buatPerintahOpname() {
+async function simpanPerintahOpname() {
   const kodeSo = document.getElementById('perintahKodeSo')?.value?.trim();
   const tanggal = document.getElementById('perintahTanggal')?.value;
   const svpNama = document.getElementById('perintahSvpNama')?.value?.trim();
@@ -99,33 +219,46 @@ async function buatPerintahOpname() {
   }
 
   const { bulan, tahun } = getOpnameRange();
+  const isEdit = Boolean(state.editingPerintahId);
   showLoader();
+
   try {
+    const payload = {
+      kode_so: kodeSo,
+      tanggal_perintah: tanggal,
+      bulan,
+      tahun,
+      svp_nama: svpNama,
+      lokasi,
+      keterangan
+    };
+
+    if (isEdit) {
+      payload.action = 'update';
+      payload.perintah_id = state.editingPerintahId;
+    }
+
     const data = await fetchJson('/api/opname-perintah', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        kode_so: kodeSo,
-        tanggal_perintah: tanggal,
-        bulan,
-        tahun,
-        svp_nama: svpNama,
-        lokasi,
-        keterangan
-      })
+      body: JSON.stringify(payload)
     });
 
-    showToast(data.message || 'Perintah SO dibuat');
-    document.getElementById('perintahKodeSo').value = '';
-    document.getElementById('perintahKeterangan').value = '';
+    showToast(data.message || (isEdit ? 'Perintah SO diperbarui' : 'Perintah SO ditambahkan'));
+    resetPerintahForm();
     await loadPerintahList();
-    showOpnameTab(null, 'opnameHasil');
+    if (!isEdit) showOpnameTab(null, 'opnameHasil');
   } catch (error) {
-    console.error('Buat perintah error:', error);
-    showToast(error.message || 'Gagal membuat perintah SO', false);
+    console.error('Simpan perintah error:', error);
+    showToast(error.message || 'Gagal menyimpan perintah SO', false);
   } finally {
     hideLoader();
   }
+}
+
+/** @deprecated use simpanPerintahOpname */
+async function buatPerintahOpname() {
+  return simpanPerintahOpname();
 }
 
 async function handleHasilSoClick(perintahId) {
