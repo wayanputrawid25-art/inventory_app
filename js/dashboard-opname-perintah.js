@@ -11,8 +11,7 @@ state.editingPerintahId = null;
 function initPerintahFormDefaults() {
   const tanggalInput = document.getElementById('perintahTanggal');
   if (tanggalInput && !tanggalInput.value && !state.editingPerintahId) {
-    const { startDate } = getOpnameRange();
-    tanggalInput.value = startDate;
+    tanggalInput.value = getTodayLocalDate();
   }
 }
 
@@ -177,8 +176,11 @@ function renderSoCard(item, mode) {
     ? `onclick="handleHasilSoClick(${item.id})"`
     : '';
 
+  const detailBtn = mode === 'hasil' && item.status === 'selesai' && item.opname_id
+    ? `<button type="button" class="hasil-so-card__edit" onclick="event.stopPropagation(); showHasilSoDetailById(${item.id})"><i data-lucide="eye"></i> Detail</button>`
+    : '';
   const editLink = mode === 'hasil'
-    ? `<button type="button" class="hasil-so-card__edit" onclick="event.stopPropagation(); editPerintahOpname(${item.id})"><i data-lucide="pencil"></i> Edit</button>`
+    ? `<button type="button" class="hasil-so-card__edit" onclick="event.stopPropagation(); editPerintahOpname(${item.id})"><i data-lucide="pencil"></i> Edit</button>${detailBtn}`
     : '';
 
   return `
@@ -251,6 +253,15 @@ async function simpanPerintahOpname() {
 /** @deprecated use simpanPerintahOpname */
 async function buatPerintahOpname() {
   return simpanPerintahOpname();
+}
+
+async function showHasilSoDetailById(perintahId) {
+  const perintah = state.perintahList.find(item => item.id === perintahId);
+  if (!perintah) {
+    showToast('Perintah SO tidak ditemukan', false);
+    return;
+  }
+  await showHasilSoDetail(perintah);
 }
 
 async function handleHasilSoClick(perintahId) {
@@ -372,7 +383,8 @@ async function showHasilSoDetail(perintah) {
       window._currentHasilData = {
         header: { ...data.header, kode_so: perintah.kode_so, svp_nama: perintah.svp_nama },
         details,
-        kode_so: perintah.kode_so
+        kode_so: perintah.kode_so,
+        perintah_id: perintah.id
       };
     } else {
       window._currentHasilData = { header: perintah, details: [], kode_so: perintah.kode_so };
@@ -386,11 +398,19 @@ async function showHasilSoDetail(perintah) {
     document.getElementById('hasilDetailLokasi').textContent = escapeHtml(header.lokasi || perintah.lokasi || '-');
 
     const hasVariance = Number(header.total_item_selisih ?? header.total_selisih ?? 0) > 0;
+    const sudahDisesuaikan = Boolean(header.disesuaikan_at || header.stok_disesuaikan);
     const badge = document.getElementById('hasilDetailStatusBadge');
     if (badge) {
-      badge.textContent = hasVariance ? 'Ada Selisih' : 'Seimbang';
-      badge.className = `opname-pill ${hasVariance ? 'status-wait' : 'status-done'}`;
+      if (sudahDisesuaikan) {
+        badge.textContent = 'Stok Sudah Disesuaikan';
+        badge.className = 'opname-pill status-done';
+      } else {
+        badge.textContent = hasVariance ? 'Dicatat · Ada Selisih' : 'Dicatat · Seimbang';
+        badge.className = `opname-pill ${hasVariance ? 'status-wait' : 'status-process'}`;
+      }
     }
+
+    updateHasilSesuaikanButton(header, details);
 
     const tbody = document.getElementById('hasilDetailBody');
     tbody.innerHTML = details.length
@@ -413,6 +433,68 @@ async function showHasilSoDetail(perintah) {
   } catch (error) {
     console.error('Detail hasil SO error:', error);
     showToast(error.message || 'Gagal memuat detail hasil', false);
+  } finally {
+    hideLoader();
+  }
+}
+
+function updateHasilSesuaikanButton(header, details = []) {
+  const btn = document.getElementById('hasilSesuaikanBtn');
+  const note = document.getElementById('hasilSesuaikanNote');
+  if (!btn) return;
+
+  const opnameId = header?.id || window._currentHasilData?.header?.id;
+  const sudahDisesuaikan = Boolean(header?.disesuaikan_at || header?.stok_disesuaikan);
+  const adaSelisih = details.some(row => Number(row.selisih) !== 0);
+
+  if (!opnameId) {
+    btn.style.display = 'none';
+    if (note) note.textContent = '';
+    return;
+  }
+
+  btn.style.display = 'inline-flex';
+  btn.disabled = sudahDisesuaikan || !adaSelisih;
+  if (note) {
+    if (sudahDisesuaikan) {
+      note.textContent = `Stok sudah disesuaikan pada ${formatDateTime(header.disesuaikan_at)}.`;
+    } else if (!adaSelisih) {
+      note.textContent = 'Tidak ada selisih. Penyesuaian stok tidak diperlukan.';
+    } else {
+      note.textContent = 'Hasil hanya dicatat. Klik Sesuaikan Stok untuk menerapkan selisih ke penyesuaian gudang (tanggal hari ini).';
+    }
+  }
+}
+
+async function sesuaikanHasilSO() {
+  const opnameId = window._currentHasilData?.header?.id;
+  if (!opnameId) {
+    showToast('Data hasil opname tidak ditemukan', false);
+    return;
+  }
+
+  if (!window.confirm('Terapkan selisih hasil opname ke stok gudang (penyesuaian)?')) {
+    return;
+  }
+
+  showLoader();
+  try {
+    const data = await fetchJson('/api/sesuaikan-opname', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ opname_id: opnameId })
+    });
+
+    showToast(data.message || 'Stok berhasil disesuaikan');
+    await loadPerintahList();
+    const perintah = state.perintahList.find(item => item.opname_id === opnameId || item.id === window._currentHasilData?.perintah_id);
+    if (perintah) {
+      await showHasilSoDetail(perintah);
+    }
+    await loadOpnameKpiData();
+  } catch (error) {
+    console.error('Sesuaikan opname error:', error);
+    showToast(error.message || 'Gagal menyesuaikan stok', false);
   } finally {
     hideLoader();
   }

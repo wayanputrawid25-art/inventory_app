@@ -1611,6 +1611,14 @@ function getOpnameOutletId() {
   return raw ? Number(raw) : undefined;
 }
 
+function getTodayLocalDate() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function getOpnameRange() {
   const bulan = document.getElementById('opnameBulan')?.value || getBulan();
   const tahun = document.getElementById('opnameTahun')?.value || getTahun();
@@ -1962,6 +1970,37 @@ function closeHistoryDetail() {
   if (panel) panel.style.display = 'none';
 }
 
+async function sesuaikanHistoryOpname() {
+  const btn = document.getElementById('historySesuaikanBtn');
+  const opnameId = Number(btn?.dataset.opnameId);
+  if (!opnameId) {
+    showToast('Data opname tidak ditemukan', false);
+    return;
+  }
+
+  if (!window.confirm('Terapkan selisih hasil opname ke stok gudang (penyesuaian)?')) {
+    return;
+  }
+
+  showLoader();
+  try {
+    const data = await fetchJson('/api/sesuaikan-opname', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ opname_id: opnameId })
+    });
+    showToast(data.message || 'Stok berhasil disesuaikan');
+    await loadHistory();
+    await showHistoryDetail(opnameId);
+    await loadOpnameKpiData();
+  } catch (error) {
+    console.error('Sesuaikan history opname error:', error);
+    showToast(error.message || 'Gagal menyesuaikan stok', false);
+  } finally {
+    hideLoader();
+  }
+}
+
 async function showHistoryDetail(opnameId) {
   showLoader();
   try {
@@ -1980,7 +2019,16 @@ async function showHistoryDetail(opnameId) {
       <div><label>Lokasi</label><p style="font-weight:600;margin:0;color:#000">${escapeHtml(header.lokasi || '-')}</p></div>
       <div><label>Total Item / Selisih</label><p style="font-weight:600;margin:0;color:#000">${formatNumber(header.total_item)} / ${formatNumber(header.total_selisih)}</p></div>
       <div><label>Keterangan</label><p style="font-weight:600;margin:0;color:#000">${escapeHtml(header.keterangan || '-')}</p></div>
+      <div><label>Status Stok</label><p style="font-weight:600;margin:0;color:#000">${header.stok_disesuaikan || header.disesuaikan_at ? `Sudah disesuaikan (${formatDateTime(header.disesuaikan_at)})` : 'Dicatat, belum disesuaikan'}</p></div>
     `;
+
+    const sesuaikanBtn = document.getElementById('historySesuaikanBtn');
+    const adaSelisih = details.some(row => Number(row.selisih) !== 0);
+    if (sesuaikanBtn) {
+      sesuaikanBtn.style.display = 'inline-flex';
+      sesuaikanBtn.disabled = Boolean(header.stok_disesuaikan || header.disesuaikan_at) || !adaSelisih;
+      sesuaikanBtn.dataset.opnameId = String(header.opname_id);
+    }
 
     const tbody = document.getElementById('historyDetailBody');
     tbody.innerHTML = details.length
@@ -2065,7 +2113,6 @@ async function simpanOpname() {
     return;
   }
 
-  const { startDate } = getOpnameRange();
   const items = Object.entries(state.opnameScan).map(([sku, data]) => ({
     sku,
     sistem: data.sistem,
@@ -2080,7 +2127,7 @@ async function simpanOpname() {
   showLoader();
   try {
     const body = {
-      tanggal: startDate,
+      tanggal: getTodayLocalDate(),
       checker,
       lokasi,
       items,
@@ -2094,7 +2141,7 @@ async function simpanOpname() {
       body: JSON.stringify(body)
     });
 
-    showToast(data.message || 'Opname berhasil disimpan');
+    showToast(data.message || 'Hasil opname berhasil dicatat');
     stopOpnameScanner();
     state.activePerintah = null;
     state.opnameScan = {};

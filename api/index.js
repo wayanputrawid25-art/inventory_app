@@ -19,6 +19,7 @@ import persediaanHandler from "../backend/persediaan.js";
 import outletTransaksiHandler from "../backend/outlet-transaksi.js";
 import produkListHandler from "../backend/produk-list.js";
 import simpanOpnameHandler from "../backend/simpan-opname.js";
+import sesuaikanOpnameHandler from "../backend/sesuaikan-opname.js";
 import stokSistemHandler from "../backend/stok-sistem.js";
 import templateOutletHandler from "../backend/template-outlet.js";
 import templatePembelianHandler from "../backend/template-pembelian.js";
@@ -56,7 +57,8 @@ const routes = {
   "POST /import-pembelian": importPembelianHandler,
   "POST /import-stok_awal": importStokAwalHandler,
   "POST /import-outlet": importOutletHandler,
-  "POST /simpan-opname": simpanOpnameHandler
+  "POST /simpan-opname": simpanOpnameHandler,
+  "POST /sesuaikan-opname": sesuaikanOpnameHandler
 };
 
 function getRoutePath(req) {

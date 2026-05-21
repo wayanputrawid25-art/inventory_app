@@ -21,6 +21,7 @@ export default async function handler(req, res) {
     const createdAtCol = columns.has("created_at") ? "h.created_at" : "h.tanggal";
     const itemSelisihCol = columns.has("total_item_selisih") ? "h.total_item_selisih" : "0 AS total_item_selisih";
     const selisihNetCol = columns.has("total_selisih_net") ? "h.total_selisih_net" : "0 AS total_selisih_net";
+    const disesuaikanCol = columns.has("disesuaikan_at") ? "h.disesuaikan_at" : "NULL::timestamp AS disesuaikan_at";
 
     const perintahJoin = hasPerintah
       ? "LEFT JOIN stok_opname_perintah p ON p.opname_id = h.id"
@@ -52,6 +53,7 @@ export default async function handler(req, res) {
           h.total_selisih,
           ${itemSelisihCol},
           ${selisihNetCol},
+          ${disesuaikanCol},
           ${createdAtCol} AS created_at,
           d.sku,
           p2.nama_produk,
@@ -100,7 +102,9 @@ export default async function handler(req, res) {
           total_selisih: header.total_selisih,
           total_item_selisih: header.total_item_selisih,
           total_selisih_net: header.total_selisih_net,
-          created_at: header.created_at
+          created_at: header.created_at,
+          disesuaikan_at: header.disesuaikan_at,
+          stok_disesuaikan: Boolean(header.disesuaikan_at)
         },
         details
       });
@@ -133,6 +137,7 @@ export default async function handler(req, res) {
         h.total_selisih,
         ${itemSelisihCol},
         ${selisihNetCol},
+        ${disesuaikanCol},
         ${createdAtCol} AS created_at
       FROM stok_opname h
       ${perintahJoin}

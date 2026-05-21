@@ -1,4 +1,9 @@
 import pool from "../services/db.js";
+import {
+  buildOpnamePenyesuaianRefPattern,
+  ensureStokOpnameDisesuaikanColumn,
+  getStokOpnameColumns
+} from "./opname-db-utils.js";
 
 export default async function handler(req, res) {
   const client = await pool.connect();
@@ -53,12 +58,25 @@ export default async function handler(req, res) {
       });
     }
 
+    await ensureStokOpnameDisesuaikanColumn();
+    const opnameColumns = await getStokOpnameColumns();
+
     await client.query("BEGIN");
     transactionStarted = true;
 
     let opnameId = perintah.opname_id ? Number(perintah.opname_id) : null;
 
     if (isUpdate) {
+      await client.query(
+        `DELETE FROM stok_penyesuaian WHERE keterangan LIKE $1`,
+        [buildOpnamePenyesuaianRefPattern(opnameId)]
+      );
+
+      const clearDisesuaikanSql = opnameColumns.has("disesuaikan_at")
+        ? ", disesuaikan_at = NULL"
+        : "";
+      const updatedAtOnClear = opnameColumns.has("updated_at") ? ", updated_at = NOW()" : "";
+
       await client.query(`
         UPDATE stok_opname
         SET
@@ -67,6 +85,8 @@ export default async function handler(req, res) {
           checker = $3,
           lokasi = $4,
           keterangan = $5
+          ${clearDisesuaikanSql}
+          ${updatedAtOnClear}
         WHERE id = $6
       `, [tanggal, normalizedItems.length, checker || null, lokasi || null, keterangan || null, opnameId]);
 
@@ -146,11 +166,12 @@ export default async function handler(req, res) {
 
     res.json({
       message: isUpdate
-        ? `Hasil ${perintah.kode_so} berhasil diperbarui`
-        : `Hasil ${perintah.kode_so} berhasil disimpan`,
+        ? `Hasil ${perintah.kode_so} berhasil diperbarui (dicatat, belum menyesuaikan stok)`
+        : `Hasil ${perintah.kode_so} berhasil dicatat. Gunakan tombol Sesuaikan untuk menyesuaikan stok.`,
       opname_id: opnameId,
       perintah_id: perintah.id,
-      kode_so: perintah.kode_so
+      kode_so: perintah.kode_so,
+      stok_disesuaikan: false
     });
 
   } catch (err) {

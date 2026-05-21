@@ -807,7 +807,7 @@
                   <h4>Daftar Perintah & Hasil SO</h4>
                 </div>
               </div>
-              <p class="opname-help-text">Klik kartu SO untuk mulai atau melanjutkan scan. Perintah yang sudah selesai tetap bisa diedit dan ditambah item.</p>
+              <p class="opname-help-text">Klik kartu SO untuk mulai atau melanjutkan scan. Simpan hanya mencatat hasil; gunakan <strong>Sesuaikan Stok</strong> di detail untuk menerapkan selisih ke gudang. Filter bulan hanya untuk melihat progres.</p>
               <div id="hasilSoList" class="hasil-so-grid"></div>
             </div>
           </div>
@@ -841,7 +841,9 @@
                   <tbody id="hasilDetailBody"></tbody>
                 </table>
               </div>
+              <p id="hasilSesuaikanNote" class="opname-help-text top-space"></p>
               <div class="section-actions top-space">
+                <button type="button" class="btn-primary" id="hasilSesuaikanBtn" onclick="sesuaikanHasilSO()" style="display:none;"><i data-lucide="git-compare"></i><span>Sesuaikan Stok</span></button>
                 <button type="button" class="btn-primary" onclick="exportHasilSOcsv()"><i data-lucide="download"></i><span>Download CSV</span></button>
                 <button type="button" class="btn-secondary" id="hasilMulaiScanBtn" onclick="mulaiScanDariHasil()"><i data-lucide="scan-line"></i><span>Mulai / Lanjut Scan</span></button>
               </div>
@@ -888,7 +890,7 @@
                   <button type="button" class="btn-primary" onclick="applyManualOpnameScan()"><i data-lucide="search"></i><span>Cari</span></button>
                 </div>
                 <div class="scanner-actions top-space">
-                  <button type="button" onclick="simpanOpname()" class="btn-primary" style="flex:1"><i data-lucide="save"></i><span>Simpan & Selesai</span></button>
+                  <button type="button" onclick="simpanOpname()" class="btn-primary" style="flex:1"><i data-lucide="save"></i><span>Simpan Hasil (Catat)</span></button>
                   <button type="button" onclick="resetOpnameScanState()" class="btn-secondary" style="flex:1"><i data-lucide="refresh-cw"></i><span>Reset Scan</span></button>
                 </div>
               </div>
@@ -967,6 +969,9 @@
                 </thead>
                 <tbody id="historyDetailBody"></tbody>
               </table>
+            </div>
+            <div class="section-actions top-space">
+              <button type="button" class="btn-primary" id="historySesuaikanBtn" onclick="sesuaikanHistoryOpname()" style="display:none;"><i data-lucide="git-compare"></i><span>Sesuaikan Stok</span></button>
             </div>
           </div>
         </div>

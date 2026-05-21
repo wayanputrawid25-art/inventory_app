@@ -8,7 +8,8 @@ export default async function handler(req, res) {
       const columns = await getStokOpnameColumns();
       const extraSelect = [
         columns.has("total_item_selisih") ? "h.total_item_selisih" : "0 AS total_item_selisih",
-        columns.has("total_selisih_net") ? "h.total_selisih_net" : "0 AS total_selisih_net"
+        columns.has("total_selisih_net") ? "h.total_selisih_net" : "0 AS total_selisih_net",
+        columns.has("disesuaikan_at") ? "h.disesuaikan_at" : "NULL::timestamp AS disesuaikan_at"
       ].join(",\n            ");
       const createdAtSelect = columns.has("created_at") ? "h.created_at" : "h.tanggal AS created_at";
 
@@ -61,7 +62,9 @@ export default async function handler(req, res) {
             total_selisih: header.total_selisih,
             total_item_selisih: header.total_item_selisih,
             total_selisih_net: header.total_selisih_net,
-            created_at: header.created_at
+            created_at: header.created_at,
+            disesuaikan_at: header.disesuaikan_at,
+            stok_disesuaikan: Boolean(header.disesuaikan_at)
           },
           details
         });

@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS stok_opname (
   checker VARCHAR(150),
   lokasi VARCHAR(150),
   keterangan TEXT,
+  disesuaikan_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
