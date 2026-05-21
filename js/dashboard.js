@@ -73,6 +73,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   selectPersediaanImport(null, "pembelian");
   await loadProdukOptions();
   await loadAuditOutletOptions();
+  initOpnameQtyModal();
   selectMenu(null, getSavedMenu());
 });
 
@@ -2138,33 +2139,155 @@ async function applyManualOpnameScan() {
     return;
   }
 
-  // Jika sudah di-scan, buka input qty
-  if (state.opnameScan[product.sku]) {
-    promptOpnameQty(product);
-  } else {
-    // Pertama kali scan, langsung minta qty
-    promptOpnameQty(product);
-  }
+  await promptOpnameQty(product);
 }
 
-function promptOpnameQty(product) {
-  const systemQty = getProductStokSistem(product);
-  const currentQty = state.opnameScan[product.sku]?.fisik || '';
-  
-  const qty = prompt(
-    `${product.nama_barang || product.nama_produk}\n\nStok Sistem: ${systemQty}\n\nMasukkan Qty Fisik:`,
-    currentQty
-  );
+let opnameQtyModalResolver = null;
+let opnameQtyModalProduct = null;
+let opnameQtyModalSystemQty = 0;
 
-  if (qty === null) return; // Dibatalkan
+function initOpnameQtyModal() {
+  const modal = document.getElementById('opnameQtyModal');
+  const input = document.getElementById('opnameQtyModalInput');
+  const preview = document.getElementById('opnameQtySelisihPreview');
+  if (!modal || !input) return;
 
-  const fisikQty = Number(qty);
-  if (isNaN(fisikQty) || fisikQty < 0) {
-    showToast('Qty fisik harus angka positif', false);
-    return;
+  const closeModal = (value) => {
+    modal.classList.remove('app-modal--open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    const resolve = opnameQtyModalResolver;
+    opnameQtyModalResolver = null;
+    opnameQtyModalProduct = null;
+    resolve?.(value);
+  };
+
+  const updateSelisihPreview = () => {
+    if (!preview) return;
+    const raw = input.value.trim();
+    if (raw === '') {
+      preview.hidden = true;
+      return;
+    }
+
+    const fisik = Number(raw);
+    if (!Number.isFinite(fisik)) {
+      preview.hidden = true;
+      return;
+    }
+
+    const selisih = fisik - opnameQtyModalSystemQty;
+    preview.hidden = false;
+    preview.className = 'opname-qty-selisih';
+    if (selisih === 0) {
+      preview.classList.add('opname-qty-selisih--match');
+      preview.textContent = 'Selisih: 0 — stok sesuai sistem';
+    } else if (selisih > 0) {
+      preview.classList.add('opname-qty-selisih--plus');
+      preview.textContent = `Selisih: +${formatNumber(selisih)} (lebih dari sistem)`;
+    } else {
+      preview.classList.add('opname-qty-selisih--minus');
+      preview.textContent = `Selisih: ${formatNumber(selisih)} (kurang dari sistem)`;
+    }
+  };
+
+  const adjustQty = (delta) => {
+    const current = input.value === '' ? opnameQtyModalSystemQty : Number(input.value || 0);
+    const next = Math.max(0, current + delta);
+    input.value = String(next);
+    updateSelisihPreview();
+  };
+
+  const confirmQty = () => {
+    const raw = input.value.trim();
+    if (raw === '') {
+      showToast('Masukkan qty fisik terlebih dahulu', false);
+      input.focus();
+      return;
+    }
+
+    const fisikQty = Number(raw);
+    if (!Number.isFinite(fisikQty) || fisikQty < 0) {
+      showToast('Qty fisik harus angka positif', false);
+      input.focus();
+      return;
+    }
+
+    closeModal(fisikQty);
+  };
+
+  modal.querySelectorAll('[data-opname-qty-close]').forEach(el => {
+    el.addEventListener('click', () => closeModal(null));
+  });
+
+  document.getElementById('opnameQtyModalCancel')?.addEventListener('click', () => closeModal(null));
+  document.getElementById('opnameQtyModalConfirm')?.addEventListener('click', confirmQty);
+  document.getElementById('opnameQtyDec')?.addEventListener('click', () => adjustQty(-1));
+  document.getElementById('opnameQtyInc')?.addEventListener('click', () => adjustQty(1));
+  input.addEventListener('input', updateSelisihPreview);
+
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      confirmQty();
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeModal(null);
+    }
+  });
+
+  modal.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeModal(null);
+  });
+}
+
+function openOpnameQtyModal(product, systemQty, currentQty = '') {
+  const modal = document.getElementById('opnameQtyModal');
+  const input = document.getElementById('opnameQtyModalInput');
+  const preview = document.getElementById('opnameQtySelisihPreview');
+  if (!modal || !input) {
+    return Promise.resolve(null);
   }
 
-  // Simpan ke state
+  const nama = product.nama_barang || product.nama_produk || '-';
+  const sku = product.sku || product.kode_barang || '-';
+
+  opnameQtyModalProduct = product;
+  opnameQtyModalSystemQty = systemQty;
+
+  document.getElementById('opnameQtyModalTitle').textContent = nama;
+  document.getElementById('opnameQtyModalSku').textContent = `SKU: ${sku}`;
+  document.getElementById('opnameQtyModalSistem').textContent = formatNumber(systemQty);
+  input.value = currentQty === '' || currentQty === undefined ? '' : String(currentQty);
+
+  if (preview) {
+    preview.hidden = true;
+    preview.className = 'opname-qty-selisih';
+  }
+
+  modal.classList.add('app-modal--open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  if (window.lucide) lucide.createIcons();
+
+  window.setTimeout(() => {
+    input.focus();
+    input.select();
+  }, 80);
+
+  return new Promise(resolve => {
+    opnameQtyModalResolver = resolve;
+  });
+}
+
+async function promptOpnameQty(product) {
+  const systemQty = getProductStokSistem(product);
+  const currentQty = state.opnameScan[product.sku]?.fisik ?? '';
+  const fisikQty = await openOpnameQtyModal(product, systemQty, currentQty);
+
+  if (fisikQty === null) return;
+
   state.opnameScan[product.sku] = {
     nama: product.nama_barang || product.nama_produk,
     sistem: systemQty,
@@ -2172,15 +2295,15 @@ function promptOpnameQty(product) {
     selisih: fisikQty - systemQty
   };
 
-  // Update display
   displayScanResult(product, fisikQty, systemQty);
   updateOpnameScanSummary();
   refreshOpnameMetrics();
 
-  // Clear input dan focus kembali
   const input = document.getElementById('manualOpnameScan');
-  input.value = '';
-  input.focus();
+  if (input) {
+    input.value = '';
+    input.focus();
+  }
 }
 
 function displayScanResult(product, fisik, sistem) {

@@ -950,6 +950,40 @@
 
   <div id="toast"></div>
 
+  <div id="opnameQtyModal" class="app-modal" aria-hidden="true">
+    <div class="app-modal__backdrop" data-opname-qty-close></div>
+    <div class="app-modal__dialog opname-qty-dialog" role="dialog" aria-modal="true" aria-labelledby="opnameQtyModalTitle">
+      <button type="button" class="app-modal__close" data-opname-qty-close aria-label="Tutup">
+        <i data-lucide="x"></i>
+      </button>
+      <div class="opname-qty-dialog__icon">
+        <i data-lucide="package-check"></i>
+      </div>
+      <p class="section-eyebrow">Stok Opname</p>
+      <h3 id="opnameQtyModalTitle" class="opname-qty-dialog__title">-</h3>
+      <p id="opnameQtyModalSku" class="opname-qty-dialog__sku"></p>
+      <div class="opname-qty-dialog__stats">
+        <div class="opname-qty-stat">
+          <span>Stok Sistem</span>
+          <strong id="opnameQtyModalSistem">0</strong>
+        </div>
+        <div class="opname-qty-stat opname-qty-stat--input">
+          <span>Qty Fisik</span>
+          <div class="opname-qty-stepper">
+            <button type="button" class="opname-qty-stepper__btn" id="opnameQtyDec" aria-label="Kurangi">−</button>
+            <input type="number" id="opnameQtyModalInput" min="0" step="1" inputmode="numeric" placeholder="0">
+            <button type="button" class="opname-qty-stepper__btn" id="opnameQtyInc" aria-label="Tambah">+</button>
+          </div>
+        </div>
+      </div>
+      <div id="opnameQtySelisihPreview" class="opname-qty-selisih" hidden></div>
+      <div class="app-modal__actions">
+        <button type="button" class="btn-secondary" id="opnameQtyModalCancel">Batal</button>
+        <button type="button" class="btn-primary" id="opnameQtyModalConfirm"><i data-lucide="check"></i><span>Simpan</span></button>
+      </div>
+    </div>
+  </div>
+
   <div id="loader">
     <div class="loader-content">
       <img src="/assets/logo.png" class="loader-logo" alt="CV EPIC Warehouse">
@@ -961,7 +995,7 @@
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-  <script src="/js/dashboard.js?v=opname-20260521"></script>
+  <script src="/js/dashboard.js?v=opname-modal-20260521"></script>
   <script src="/js/dashboard-opname-export.js?v=opname-20260521"></script>
   <script>
     lucide.createIcons();
