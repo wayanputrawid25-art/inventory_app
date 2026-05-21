@@ -29,7 +29,9 @@ const state = {
     analysis: [],
     notes: []
   },
-  opname: []
+  opname: [],
+  opnameScan: {}, // {sku: {nama, sistem, fisik, catatan}}
+  opnameExportSessions: []
 };
 
 const pageMeta = {
@@ -504,6 +506,7 @@ function showOpnameTab(event, id) {
   const target = document.getElementById(id);
   if (target) target.style.display = "block";
   const activeButton = event?.currentTarget
+    || document.querySelector(`.tab-menu-opname button[data-opname-tab="${id}"]`)
     || [...document.querySelectorAll(".tab-menu-opname button")].find(button => button.getAttribute("onclick")?.includes(`'${id}'`));
   activeButton?.classList.add("active-tab");
 
@@ -1865,22 +1868,28 @@ async function exportOpnameHistory() {
 }
 
 async function simpanOpname() {
-  const { bulan, tahun, startDate } = getOpnameRange();
   const checker = document.getElementById('opnameChecker')?.value?.trim();
   const lokasi = document.getElementById('opnameGudang')?.value?.trim();
+  
+  if (!checker) {
+    showToast('Isi nama PIC checker terlebih dahulu', false);
+    return;
+  }
 
-  const items = [...document.querySelectorAll('#opnameBody tr')]
-    .filter(row => hasOpnameInput(row))
-    .map(row => {
-      const sku = row.children[0].textContent.trim();
-      const sistem = Number((document.getElementById(`sys-${sku}`)?.textContent || '0').replace(/\./g, '').replace(/,/g, ''));
-      const input = document.getElementById(`fisik-${sku}`);
-      const fisik = input?.value === '' ? sistem : Number(input?.value || 0);
-      return { sku, sistem, fisik };
-    });
+  if (!lokasi) {
+    showToast('Isi lokasi gudang terlebih dahulu', false);
+    return;
+  }
+
+  const { startDate } = getOpnameRange();
+  const items = Object.entries(state.opnameScan).map(([sku, data]) => ({
+    sku,
+    sistem: data.sistem,
+    fisik: data.fisik
+  }));
 
   if (!items.length) {
-    showToast('Tidak ada data opname yang sudah diisi untuk disimpan', false);
+    showToast('Tidak ada data scan untuk disimpan. Lakukan scan minimal 1 barang', false);
     return;
   }
 
@@ -1901,8 +1910,8 @@ async function simpanOpname() {
 
     showToast(data.message || 'Opname berhasil disimpan');
     resetOpnameScanState();
-    await loadStokSistem();
     await loadHistory();
+    showOpnameTab(null, 'opnameHistory');
   } catch (error) {
     console.error('Simpan opname error:', error);
     showToast(error.message || 'Gagal menyimpan opname', false);
@@ -2009,14 +2018,125 @@ async function importOpnameCSV() {
 
 function applyManualOpnameScan() {
   const input = document.getElementById('manualOpnameScan');
-  const value = input?.value?.trim();
-  if (!value) {
+  const sku = input?.value?.trim();
+  if (!sku) {
     showToast('Isi SKU atau barcode produk terlebih dahulu', false);
     return;
   }
 
-  applyScannedOpname(value);
-  if (input) input.value = '';
+  // Cari produk di state.opname
+  const product = state.opname.find(p => 
+    p.sku?.toLowerCase() === sku.toLowerCase() || 
+    p.kode_barang?.toLowerCase() === sku.toLowerCase()
+  );
+
+  if (!product) {
+    showToast(`SKU "${sku}" tidak ditemukan di stok sistem periode ini`, false);
+    input.value = '';
+    input.focus();
+    return;
+  }
+
+  // Jika sudah di-scan, buka input qty
+  if (state.opnameScan[product.sku]) {
+    promptOpnameQty(product);
+  } else {
+    // Pertama kali scan, langsung minta qty
+    promptOpnameQty(product);
+  }
+}
+
+function promptOpnameQty(product) {
+  const systemQty = product.stok_sistem ?? product.qty_stok ?? 0;
+  const currentQty = state.opnameScan[product.sku]?.fisik || '';
+  
+  const qty = prompt(
+    `${product.nama_barang || product.nama_produk}\n\nStok Sistem: ${systemQty}\n\nMasukkan Qty Fisik:`,
+    currentQty
+  );
+
+  if (qty === null) return; // Dibatalkan
+
+  const fisikQty = Number(qty);
+  if (isNaN(fisikQty) || fisikQty < 0) {
+    showToast('Qty fisik harus angka positif', false);
+    return;
+  }
+
+  // Simpan ke state
+  state.opnameScan[product.sku] = {
+    nama: product.nama_barang || product.nama_produk,
+    sistem: systemQty,
+    fisik: fisikQty,
+    selisih: fisikQty - systemQty
+  };
+
+  // Update display
+  displayScanResult(product, fisikQty, systemQty);
+  updateOpnameScanSummary();
+
+  // Clear input dan focus kembali
+  const input = document.getElementById('manualOpnameScan');
+  input.value = '';
+  input.focus();
+}
+
+function displayScanResult(product, fisik, sistem) {
+  const selisih = fisik - sistem;
+  const resultDiv = document.getElementById('scanResultDetail');
+  const resultPanel = document.getElementById('opnameScanResult');
+
+  if (!resultDiv || !resultPanel) return;
+
+  resultDiv.innerHTML = `
+    <div style="background: white; padding: 12px; border-radius: 6px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+        <div>
+          <label style="font-size: 12px; color: #666;">SKU</label>
+          <p style="font-weight: 600; margin: 0;">${escapeHtml(product.sku)}</p>
+        </div>
+        <div>
+          <label style="font-size: 12px; color: #666;">Produk</label>
+          <p style="font-weight: 600; margin: 0;">${escapeHtml(product.nama_barang || product.nama_produk)}</p>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+        <div style="text-align: center; padding: 12px; background: #f0f0f0; border-radius: 4px;">
+          <p style="margin: 0; font-size: 12px; color: #666;">Sistem</p>
+          <p style="margin: 0; font-size: 20px; font-weight: 700; color: #333;">${formatNumber(sistem)}</p>
+        </div>
+        <div style="text-align: center; padding: 12px; background: #f0f0f0; border-radius: 4px;">
+          <p style="margin: 0; font-size: 12px; color: #666;">Fisik</p>
+          <p style="margin: 0; font-size: 20px; font-weight: 700; color: #333;">${formatNumber(fisik)}</p>
+        </div>
+        <div style="text-align: center; padding: 12px; background: ${selisih === 0 ? '#e8f5e9' : selisih > 0 ? '#fff3e0' : '#ffebee'}; border-radius: 4px;">
+          <p style="margin: 0; font-size: 12px; color: #666;">Selisih</p>
+          <p style="margin: 0; font-size: 20px; font-weight: 700; color: ${selisih === 0 ? '#2e7d32' : selisih > 0 ? '#e65100' : '#c62828'};">${formatNumber(selisih)}</p>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  resultPanel.style.display = 'block';
+}
+
+function updateOpnameScanSummary() {
+  let totalCount = 0;
+  let totalSistem = 0;
+  let totalFisik = 0;
+  let totalSelisih = 0;
+
+  Object.values(state.opnameScan).forEach(item => {
+    totalCount++;
+    totalSistem += item.sistem;
+    totalFisik += item.fisik;
+    totalSelisih += item.selisih;
+  });
+
+  setText('scanCount', formatNumber(totalCount));
+  setText('scanSistem', formatNumber(totalSistem));
+  setText('scanFisik', formatNumber(totalFisik));
+  setText('scanSelisih', formatNumber(totalSelisih));
 }
 
 function loadScannerLibrary() {
@@ -2112,14 +2232,12 @@ function stopOpnameScanner() {
 
 function resetOpnameScanState() {
   stopOpnameScanner();
-  opnameScannerMode = 'barang';
-  const modeSelect = document.getElementById('opnameScanMode');
-  if (modeSelect) modeSelect.value = 'barang';
-  const resultEl = document.getElementById('scanOpnameResult');
-  if (resultEl) resultEl.value = '';
-  const statusEl = document.getElementById('scanOpnameStatus');
-  if (statusEl) statusEl.textContent = 'Mode scan: Barang';
-  setText('opnameLastScanBadge', 'Belum ada scan');
+  state.opnameScan = {};
+  document.getElementById('manualOpnameScan').value = '';
+  document.getElementById('scanOpnameStatus').textContent = 'Siap scan';
+  document.getElementById('opnameScanResult').style.display = 'none';
+  updateOpnameScanSummary();
+  document.getElementById('manualOpnameScan').focus();
 }
 
 function setOpnameScannerMode(mode) {

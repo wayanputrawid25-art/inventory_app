@@ -681,12 +681,12 @@
         </div>
 
         <div class="subtab-menu tab-menu-opname">
-          <button onclick="showOpnameTab(event,'opnameKPI')" class="active-tab"><i data-lucide="layout-dashboard"></i><span>KPI</span></button>
-          <button onclick="showOpnameTab(event,'opnameInput')"><i data-lucide="scan-line"></i><span>Scan & Input</span></button>
-          <button onclick="showOpnameTab(event,'opnameHistory')"><i data-lucide="history"></i><span>History</span></button>
-          <button onclick="showOpnameTab(event,'opnameImport')"><i data-lucide="upload"></i><span>Import</span></button>
-          <button onclick="showOpnameTab(event,'opnameExport')"><i data-lucide="download"></i><span>Export</span></button>
-          <button onclick="showOpnameTab(event,'opnameBarcode')"><i data-lucide="barcode"></i><span>Barcode</span></button>
+          <button data-opname-tab="opnameKPI" onclick="showOpnameTab(event,'opnameKPI')" class="active-tab"><i data-lucide="layout-dashboard"></i><span>KPI</span></button>
+          <button data-opname-tab="opnameInput" onclick="showOpnameTab(event,'opnameInput')"><i data-lucide="scan-line"></i><span>Scan & Input</span></button>
+          <button data-opname-tab="opnameHistory" onclick="showOpnameTab(event,'opnameHistory')"><i data-lucide="history"></i><span>History</span></button>
+          <button data-opname-tab="opnameImport" onclick="showOpnameTab(event,'opnameImport')"><i data-lucide="upload"></i><span>Import</span></button>
+          <button data-opname-tab="opnameExport" onclick="showOpnameTab(event,'opnameExport')"><i data-lucide="download"></i><span>Export</span></button>
+          <button data-opname-tab="opnameBarcode" onclick="showOpnameTab(event,'opnameBarcode')"><i data-lucide="barcode"></i><span>Barcode</span></button>
         </div>
 
         <div id="opnameKPI" class="opname-content">
@@ -761,85 +761,50 @@
             <div class="opname-panel scanner-panel">
               <div class="opname-panel-heading">
                 <div>
-                  <p class="section-eyebrow">Scanner</p>
-                  <h4>Scan Produk / Rak</h4>
+                  <p class="section-eyebrow">Input Mode</p>
+                  <h4>Scan & Input Qty Fisik</h4>
                 </div>
-                <span id="scanOpnameStatus" class="opname-pill">Mode scan: Barang</span>
-              </div>
-              <div class="scanner-actions">
-                <select id="opnameScanMode" onchange="setOpnameScannerMode(this.value)">
-                  <option value="barang">Scan Barang</option>
-                  <option value="rak">Scan Rak</option>
-                </select>
-                <button type="button" class="btn-primary" onclick="startOpnameScanner()"><i data-lucide="camera"></i><span>Kamera</span></button>
-                <button type="button" class="btn-secondary" onclick="stopOpnameScanner()"><i data-lucide="square"></i><span>Stop</span></button>
-              </div>
-              <div class="scanner-summary">
-                <input type="text" id="scanOpnameResult" placeholder="Hasil scan kamera" readonly>
-              </div>
-              <div class="manual-scan-row">
-                <input type="text" id="manualOpnameScan" placeholder="Ketik / tempel SKU atau barcode produk" onkeydown="if(event.key==='Enter'){event.preventDefault();applyManualOpnameScan();}">
-                <button type="button" class="btn-secondary" onclick="applyManualOpnameScan()"><i data-lucide="search"></i><span>Cari</span></button>
-              </div>
-              <div id="scannerPreview" class="scanner-preview"></div>
-            </div>
-
-            <div class="opname-panel">
-              <div class="opname-panel-heading">
-                <div>
-                  <p class="section-eyebrow">Session</p>
-                  <h4>Petugas & Output</h4>
-                </div>
+                <span id="scanOpnameStatus" class="opname-pill">Siap scan</span>
               </div>
               <div class="print-meta-grid">
-                <input type="text" id="opnameChecker" placeholder="Nama checker">
-                <input type="text" id="opnameGudang" placeholder="Gudang / lokasi">
-                <select id="opnamePrintCategory">
-                  <option value="all">Print Semua Kategori</option>
-                  <option value="modul">Print Modul</option>
-                  <option value="seragam">Print Seragam</option>
-                  <option value="poster">Print Poster</option>
-                  <option value="lain-lain">Print Lain-lain</option>
-                </select>
-                <button onclick="printOpname()" class="btn-secondary"><i data-lucide="printer"></i><span>Print Form</span></button>
-                <button onclick="simpanOpname()" class="btn-primary"><i data-lucide="save"></i><span>Simpan Opname</span></button>
+                <input type="text" id="opnameChecker" placeholder="Nama PIC checker" required>
+                <input type="text" id="opnameGudang" placeholder="Gudang / lokasi" required>
+              </div>
+              <div class="manual-scan-row">
+                <input type="text" id="manualOpnameScan" placeholder="Scan / Ketik SKU atau barcode" autofocus onkeydown="if(event.key==='Enter'){event.preventDefault();applyManualOpnameScan();}">
+                <button type="button" class="btn-primary" onclick="applyManualOpnameScan()"><i data-lucide="search"></i><span>Cari</span></button>
+              </div>
+              <div style="display: flex; gap: 8px; margin-top: 12px;">
+                <button onclick="simpanOpname()" class="btn-primary" style="flex:1"><i data-lucide="save"></i><span>Simpan & Selesai</span></button>
+                <button onclick="resetOpnameScanState()" class="btn-secondary" style="flex:1"><i data-lucide="refresh-cw"></i><span>Reset</span></button>
               </div>
             </div>
           </div>
 
-          <div class="opname-tools">
-            <input type="text" id="searchOpname" placeholder="Cari SKU / nama produk..." oninput="filterOpname()">
-            <select id="opnameCategoryFilter" onchange="filterOpname()">
-              <option value="all">Semua Kategori</option>
-              <option value="modul">Modul</option>
-              <option value="seragam">Seragam</option>
-              <option value="poster">Poster</option>
-              <option value="lain-lain">Lain-lain</option>
-            </select>
+          <div id="opnameScanResult" class="opname-panel" style="margin-top: 16px; display:none;">
+            <div class="opname-panel-heading">
+              <p class="section-eyebrow">Item Terbaru</p>
+              <h4>Data Scan</h4>
+            </div>
+            <div id="scanResultDetail" style="padding: 16px; background: #f5f5f5; border-radius: 8px;">
+              <!-- Dynamic content -->
+            </div>
           </div>
 
-          <div class="mini-tab-strip" id="opnameCategoryTabs">
-            <button type="button" class="active-mini-tab" onclick="selectOpnameCategoryTab(event, 'all')">Semua</button>
-            <button type="button" onclick="selectOpnameCategoryTab(event, 'modul')">Modul</button>
-            <button type="button" onclick="selectOpnameCategoryTab(event, 'seragam')">Seragam</button>
-            <button type="button" onclick="selectOpnameCategoryTab(event, 'poster')">Poster</button>
-            <button type="button" onclick="selectOpnameCategoryTab(event, 'lain-lain')">Lain-lain</button>
-          </div>
-          <div class="table-wrapper">
-            <table class="table opname-table">
-              <thead>
-                <tr>
-                  <th>SKU</th>
-                  <th>Produk</th>
-                  <th>Rak</th>
-                  <th>Kategori</th>
-                  <th>Sistem</th>
-                  <th>Fisik</th>
-                  <th>Selisih</th>
-                </tr>
-              </thead>
-              <tbody id="opnameBody"></tbody>
-            </table>
+          <div class="opname-summary" style="margin-top: 16px;">
+            <h4>Ringkasan Scan</h4>
+            <div>
+              <b>Item Terbaca: </b><span id="scanCount">0</span>
+            </div>
+            <div>
+              <b>Qty Sistem: </b><span id="scanSistem">0</span>
+            </div>
+            <div>
+              <b>Qty Fisik: </b><span id="scanFisik">0</span>
+            </div>
+            <div>
+              <b>Total Selisih: </b><span id="scanSelisih">0</span>
+            </div>
           </div>
         </div>
 
@@ -881,24 +846,63 @@
         </div>
 
         <div id="opnameExport" class="opname-content" style="display:none;">
-          <div class="opname-dashboard-grid">
+          <div id="opnameExportList" style="display:block;">
             <div class="opname-panel">
               <div class="opname-panel-heading">
                 <div>
-                  <p class="section-eyebrow">Current Session</p>
-                  <h4>Export Data Input</h4>
+                  <p class="section-eyebrow">Completed Sessions</p>
+                  <h4>Daftar SO Selesai</h4>
                 </div>
               </div>
-              <button class="btn-primary" onclick="exportOpname()"><i data-lucide="download"></i><span>Download CSV Input</span></button>
+              <div id="exportSessionList" style="display: grid; gap: 12px;">
+                <!-- Populated by loadExportSessions() -->
+              </div>
             </div>
+          </div>
+          <div id="opnameExportDetail" style="display:none;">
+            <button class="btn-secondary" onclick="goBackExportList()" style="margin-bottom: 16px;"><i data-lucide="arrow-left"></i><span>Kembali</span></button>
             <div class="opname-panel">
               <div class="opname-panel-heading">
                 <div>
-                  <p class="section-eyebrow">History</p>
-                  <h4>Export Riwayat</h4>
+                  <p class="section-eyebrow"><span id="exportDetailCode">SO001</span></p>
+                  <h4>Detail Stok Opname</h4>
                 </div>
               </div>
-              <button class="btn-secondary" onclick="exportOpnameHistory()"><i data-lucide="archive"></i><span>Download CSV History</span></button>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                <div>
+                  <label>Tanggal</label>
+                  <p id="exportDetailDate" style="font-weight: 600;">-</p>
+                </div>
+                <div>
+                  <label>PIC</label>
+                  <p id="exportDetailPic" style="font-weight: 600;">-</p>
+                </div>
+                <div>
+                  <label>Lokasi</label>
+                  <p id="exportDetailLokasi" style="font-weight: 600;">-</p>
+                </div>
+                <div>
+                  <label>Status</label>
+                  <p id="exportDetailStatus" style="font-weight: 600;">-</p>
+                </div>
+              </div>
+              <div class="table-shell">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>SKU</th>
+                      <th>Produk</th>
+                      <th>Stok Sistem</th>
+                      <th>Stok Fisik</th>
+                      <th>Selisih</th>
+                    </tr>
+                  </thead>
+                  <tbody id="exportDetailBody"></tbody>
+                </table>
+              </div>
+              <div style="margin-top: 16px;">
+                <button class="btn-primary" onclick="exportSOcsv()" style="width: 100%;"><i data-lucide="download"></i><span>Download CSV</span></button>
+              </div>
             </div>
           </div>
         </div>
@@ -958,6 +962,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="/js/dashboard.js?v=nav-20260520"></script>
+  <script src="/js/dashboard-opname-export.js?v=nav-20260520"></script>
   <script>
     lucide.createIcons();
   </script>
