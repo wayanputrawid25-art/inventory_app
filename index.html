@@ -924,21 +924,50 @@
 
         <div id="opnameHistory" class="opname-content" style="display:none;">
           <div class="section-actions">
-            <button class="btn-secondary" onclick="exportOpnameHistory()">Download History CSV</button>
+            <button type="button" class="btn-secondary" onclick="exportOpnameHistory()"><i data-lucide="download"></i><span>Download CSV Lengkap</span></button>
           </div>
           <div class="table-shell top-space">
-            <table class="table">
+            <table class="table history-so-table">
               <thead>
                 <tr>
-                  <th>Tanggal</th>
-                  <th>Checker</th>
+                  <th>Kode SO</th>
+                  <th>Tgl Perintah</th>
+                  <th>Tgl Pelaksanaan</th>
+                  <th>SVP</th>
+                  <th>PIC Pelaksana</th>
                   <th>Lokasi</th>
-                  <th>Total Item</th>
-                  <th>Total Selisih</th>
+                  <th>Item</th>
+                  <th>Selisih</th>
+                  <th>Aksi</th>
                 </tr>
               </thead>
               <tbody id="historyBody"></tbody>
             </table>
+          </div>
+          <div id="historyDetailPanel" class="opname-panel top-space" style="display:none;">
+            <div class="opname-panel-heading">
+              <div>
+                <p class="section-eyebrow">Detail History</p>
+                <h4 id="historyDetailTitle">-</h4>
+              </div>
+              <button type="button" class="btn-secondary" onclick="closeHistoryDetail()"><i data-lucide="x"></i><span>Tutup</span></button>
+            </div>
+            <div class="print-meta-grid" id="historyDetailMeta"></div>
+            <div class="table-shell top-space">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Nama Produk</th>
+                    <th>Stok Sistem</th>
+                    <th>Stok Fisik</th>
+                    <th>Selisih</th>
+                    <th>Waktu Input</th>
+                  </tr>
+                </thead>
+                <tbody id="historyDetailBody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -1051,8 +1080,8 @@
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-  <script src="/js/dashboard.js?v=opname-edit-20260521d"></script>
-  <script src="/js/dashboard-opname-perintah.js?v=opname-edit-20260521d"></script>
+  <script src="/js/dashboard.js?v=opname-history-20260521e"></script>
+  <script src="/js/dashboard-opname-perintah.js?v=opname-history-20260521e"></script>
   <script>
     lucide.createIcons();
   </script>

@@ -1489,6 +1489,27 @@ button:hover {
   flex-wrap: wrap;
 }
 
+.history-so-table th,
+.history-so-table td {
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+
+.history-so-table td {
+  color: #000;
+}
+
+#historyDetailPanel label {
+  font-size: 0.78rem;
+  color: #555;
+  display: block;
+  margin-bottom: 2px;
+}
+
+#historyDetailMeta {
+  margin-bottom: 8px;
+}
+
 #toast {
   position: fixed;
   right: 24px;

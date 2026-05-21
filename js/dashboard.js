@@ -32,7 +32,8 @@ const state = {
   opname: [],
   opnameScan: {},
   perintahList: [],
-  activePerintah: null
+  activePerintah: null,
+  opnameHistory: []
 };
 
 const pageMeta = {
@@ -1883,32 +1884,98 @@ function selectOpnameCategoryTab(event, category) {
   filterOpname();
 }
 
+function formatHistoryKodeSo(item) {
+  return escapeHtml(item.kode_so || `OPNAME-${item.opname_id}`);
+}
+
 async function loadHistory() {
   try {
     const { bulan, tahun } = getOpnameRange();
     const qs = new URLSearchParams({ bulan, tahun });
-    const data = toArray(await fetchJson(`/api/opname-history?${qs.toString()}`));
+    state.opnameHistory = toArray(await fetchJson(`/api/opname-history?${qs.toString()}`));
     const body = document.getElementById('historyBody');
+    if (!body) return;
     body.innerHTML = '';
 
-    data.forEach(item => {
+    state.opnameHistory.forEach(item => {
       body.innerHTML += `
         <tr>
-          <td>${formatDate(item.tanggal)}</td>
-          <td>${escapeHtml(item.checker || '-')}</td>
+          <td><strong>${formatHistoryKodeSo(item)}</strong></td>
+          <td>${formatDate(item.tanggal_perintah)}</td>
+          <td>${formatDateTime(item.tanggal_pelaksanaan)}</td>
+          <td>${escapeHtml(item.svp_nama || '-')}</td>
+          <td>${escapeHtml(item.pic_pelaksana || item.checker || '-')}</td>
           <td>${escapeHtml(item.lokasi || '-')}</td>
           <td>${formatNumber(item.total_item)}</td>
           <td>${formatNumber(item.total_selisih)}</td>
+          <td>
+            <button type="button" class="btn-secondary btn-sm" onclick="showHistoryDetail(${item.opname_id})">
+              <i data-lucide="eye"></i><span>Detail</span>
+            </button>
+          </td>
         </tr>
       `;
     });
 
-    if (!data.length) {
-      body.innerHTML = `<tr><td colspan="5">Belum ada history opname pada periode ini.</td></tr>`;
+    if (!state.opnameHistory.length) {
+      body.innerHTML = `<tr><td colspan="9">Belum ada history SO pada periode ini.</td></tr>`;
     }
+
+    closeHistoryDetail();
+    if (window.lucide) lucide.createIcons();
   } catch (error) {
     console.error('History opname error:', error);
     showToast(error.message || 'Gagal memuat history opname', false);
+  }
+}
+
+function closeHistoryDetail() {
+  const panel = document.getElementById('historyDetailPanel');
+  if (panel) panel.style.display = 'none';
+}
+
+async function showHistoryDetail(opnameId) {
+  showLoader();
+  try {
+    const data = await fetchJson(`/api/opname-history?opname_id=${opnameId}`);
+    const { header, details } = data;
+
+    document.getElementById('historyDetailTitle').textContent =
+      `${header.kode_so || `OPNAME-${header.opname_id}`} — ${formatDateTime(header.tanggal_pelaksanaan)}`;
+
+    document.getElementById('historyDetailMeta').innerHTML = `
+      <div><label>Kode SO</label><p style="font-weight:600;margin:0;color:#000">${escapeHtml(header.kode_so || '-')}</p></div>
+      <div><label>Tanggal Perintah</label><p style="font-weight:600;margin:0;color:#000">${formatDate(header.tanggal_perintah)}</p></div>
+      <div><label>Tanggal Pelaksanaan</label><p style="font-weight:600;margin:0;color:#000">${formatDateTime(header.tanggal_pelaksanaan)}</p></div>
+      <div><label>SVP</label><p style="font-weight:600;margin:0;color:#000">${escapeHtml(header.svp_nama || '-')}</p></div>
+      <div><label>PIC Pelaksana</label><p style="font-weight:600;margin:0;color:#000">${escapeHtml(header.pic_pelaksana || '-')}</p></div>
+      <div><label>Lokasi</label><p style="font-weight:600;margin:0;color:#000">${escapeHtml(header.lokasi || '-')}</p></div>
+      <div><label>Total Item / Selisih</label><p style="font-weight:600;margin:0;color:#000">${formatNumber(header.total_item)} / ${formatNumber(header.total_selisih)}</p></div>
+      <div><label>Keterangan</label><p style="font-weight:600;margin:0;color:#000">${escapeHtml(header.keterangan || '-')}</p></div>
+    `;
+
+    const tbody = document.getElementById('historyDetailBody');
+    tbody.innerHTML = details.length
+      ? details.map(row => `
+        <tr>
+          <td>${escapeHtml(row.sku)}</td>
+          <td>${escapeHtml(row.nama_produk || '-')}</td>
+          <td style="text-align:right">${formatNumber(row.stok_sistem)}</td>
+          <td style="text-align:right">${formatNumber(row.stok_fisik)}</td>
+          <td style="text-align:right;color:${row.selisih === 0 ? '#000' : row.selisih > 0 ? '#e65100' : '#c62828'}">${formatNumber(row.selisih)}</td>
+          <td>${formatDateTime(row.input_at)}</td>
+        </tr>
+      `).join('')
+      : '<tr><td colspan="6">Tidak ada detail produk.</td></tr>';
+
+    document.getElementById('historyDetailPanel').style.display = 'block';
+    document.getElementById('historyDetailPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (window.lucide) lucide.createIcons();
+  } catch (error) {
+    console.error('History detail error:', error);
+    showToast(error.message || 'Gagal memuat detail history', false);
+  } finally {
+    hideLoader();
   }
 }
 
@@ -1919,19 +1986,23 @@ async function exportOpnameHistory() {
     const data = await fetchJson(`/api/opname-history?${qs.toString()}`);
 
     if (!data?.details?.length) {
-      showToast('Tidak ada detail history opname untuk diekspor', false);
+      showToast('Tidak ada detail history SO untuk diekspor', false);
       return;
     }
 
     downloadCsv(
-      `opname_history_${tahun}_${String(bulan).padStart(2, '0')}.csv`,
-      ['opname_id', 'tanggal', 'checker', 'lokasi', 'created_at', 'sku', 'nama_produk', 'stok_sistem', 'stok_fisik', 'selisih', 'input_at'],
+      `history_so_${tahun}_${String(bulan).padStart(2, '0')}.csv`,
+      [
+        'kode_so', 'tanggal_perintah', 'tanggal_pelaksanaan', 'svp_nama', 'pic_pelaksana',
+        'lokasi', 'sku', 'nama_produk', 'stok_sistem', 'stok_fisik', 'selisih', 'waktu_input'
+      ],
       data.details.map(row => [
-        row.opname_id,
-        formatDate(row.tanggal),
-        row.checker || '',
+        row.kode_so || `OPNAME-${row.opname_id}`,
+        formatDate(row.tanggal_perintah),
+        formatDateTime(row.tanggal_pelaksanaan),
+        row.svp_nama || '',
+        row.pic_pelaksana || '',
         row.lokasi || '',
-        formatDateTime(row.created_at),
         row.sku,
         row.nama_produk || '',
         row.stok_sistem,
