@@ -1,10 +1,26 @@
 import pool from "../services/db.js";
 
+async function getOpnameExtraColumns() {
+  const columnResult = await pool.query(`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'stok_opname'
+      AND column_name = ANY($1::text[])
+  `, [["total_item_selisih", "total_selisih_net"]]);
+  return new Set(columnResult.rows.map((row) => row.column_name));
+}
+
 export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       // List completed opname sessions
       const { bulan, tahun, opname_id } = req.query;
+      const extraColumns = await getOpnameExtraColumns();
+      const extraSelect = [
+        extraColumns.has("total_item_selisih") ? "h.total_item_selisih" : "0 AS total_item_selisih",
+        extraColumns.has("total_selisih_net") ? "h.total_selisih_net" : "0 AS total_selisih_net"
+      ].join(",\n            ");
 
       if (opname_id) {
         // Get detail of specific opname
@@ -16,8 +32,7 @@ export default async function handler(req, res) {
             h.lokasi,
             h.total_item,
             h.total_selisih,
-            h.total_item_selisih,
-            h.total_selisih_net,
+            ${extraSelect},
             h.created_at,
             d.sku,
             p.nama_produk,
@@ -38,13 +53,15 @@ export default async function handler(req, res) {
 
         // Group by header
         const header = detailResult.rows[0];
-        const details = detailResult.rows.map(row => ({
-          sku: row.sku,
-          nama_produk: row.nama_produk,
-          stok_sistem: row.stok_sistem,
-          stok_fisik: row.stok_fisik,
-          selisih: row.selisih
-        }));
+        const details = detailResult.rows
+          .filter(row => row.sku)
+          .map(row => ({
+            sku: row.sku,
+            nama_produk: row.nama_produk,
+            stok_sistem: row.stok_sistem,
+            stok_fisik: row.stok_fisik,
+            selisih: row.selisih
+          }));
 
         return res.status(200).json({
           header: {
@@ -62,6 +79,11 @@ export default async function handler(req, res) {
         });
       }
 
+      const listExtraSelect = [
+        extraColumns.has("total_item_selisih") ? "total_item_selisih" : "0 AS total_item_selisih",
+        extraColumns.has("total_selisih_net") ? "total_selisih_net" : "0 AS total_selisih_net"
+      ].join(",\n          ");
+
       // List all opname sessions for export
       const result = await pool.query(`
         SELECT 
@@ -71,8 +93,7 @@ export default async function handler(req, res) {
           lokasi,
           total_item,
           total_selisih,
-          total_item_selisih,
-          total_selisih_net,
+          ${listExtraSelect},
           created_at
         FROM stok_opname
         WHERE 1=1

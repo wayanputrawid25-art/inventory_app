@@ -21,7 +21,8 @@ async function loadExportSessions() {
 
     listContainer.innerHTML = sessions.map((session, idx) => {
       const soCode = `SO${String(idx + 1).padStart(3, '0')}`;
-      const status = session.total_item_selisih > 0 ? 'Ada Selisih' : 'Seimbang';
+      const hasVariance = Number(session.total_item_selisih ?? session.total_selisih ?? 0) > 0;
+      const status = hasVariance ? 'Ada Selisih' : 'Seimbang';
       
       return `
         <div style="
@@ -51,9 +52,9 @@ async function loadExportSessions() {
               <p style="margin: 0; font-size: 11px; color: #666;">Total Item</p>
               <p style="margin: 0; font-weight: 600; font-size: 13px;">${session.total_item}</p>
             </div>
-            <div style="background: ${session.total_item_selisih > 0 ? '#fff3e0' : '#e8f5e9'}; padding: 8px; border-radius: 4px;">
+            <div style="background: ${hasVariance ? '#fff3e0' : '#e8f5e9'}; padding: 8px; border-radius: 4px;">
               <p style="margin: 0; font-size: 11px; color: #666;">Status</p>
-              <p style="margin: 0; font-weight: 600; font-size: 13px; color: ${session.total_item_selisih > 0 ? '#e65100' : '#2e7d32'};">${status}</p>
+              <p style="margin: 0; font-weight: 600; font-size: 13px; color: ${hasVariance ? '#e65100' : '#2e7d32'};">${status}</p>
             </div>
           </div>
         </div>
@@ -80,8 +81,9 @@ async function showExportDetail(opnameId, soCode) {
     document.getElementById('exportDetailDate').textContent = formatDate(header.tanggal);
     document.getElementById('exportDetailPic').textContent = escapeHtml(header.checker || '-');
     document.getElementById('exportDetailLokasi').textContent = escapeHtml(header.lokasi || '-');
-    document.getElementById('exportDetailStatus').textContent = 
-      header.total_item_selisih > 0 ? 'Ada Selisih' : 'Seimbang';
+    const hasVariance = Number(header.total_item_selisih ?? header.total_selisih ?? 0) > 0;
+    document.getElementById('exportDetailStatus').textContent =
+      hasVariance ? 'Ada Selisih' : 'Seimbang';
 
     // Populate details table
     const tbody = document.getElementById('exportDetailBody');

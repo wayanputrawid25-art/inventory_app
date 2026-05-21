@@ -511,7 +511,9 @@ function showOpnameTab(event, id) {
   activeButton?.classList.add("active-tab");
 
   if (id === "opnameHistory") loadHistory();
+  if (id === "opnameExport") loadExportSessions();
   if (id === "opnameBarcode") loadBarcodeGenerator();
+  if (id === "opnameKPI") refreshOpnameMetrics();
   if (window.lucide) lucide.createIcons();
 }
 
@@ -1578,6 +1580,10 @@ function getOpnameCategoryLabel(category) {
 let opnameScanner = null;
 let opnameScannerMode = 'barang';
 
+function getProductStokSistem(product) {
+  return Number(product?.stok_sistem ?? product?.qty_stok ?? product?.stok ?? 0);
+}
+
 function getOpnameOutletId() {
   const outletSelect = document.getElementById('opnameOutletSelect');
   const raw = outletSelect?.value;
@@ -1607,44 +1613,49 @@ async function loadStokSistem() {
 
     state.opname = toArray(await fetchJson(`/api/stok-sistem?${qs.toString()}`));
     const body = document.getElementById('opnameBody');
-    body.innerHTML = '';
 
-    if (!state.opname.length) {
-      body.innerHTML = `<tr><td colspan="7">Belum ada stok sistem pada periode ini.</td></tr>`;
+    if (body) {
+      body.innerHTML = '';
+
+      if (!state.opname.length) {
+        body.innerHTML = `<tr><td colspan="7">Belum ada stok sistem pada periode ini.</td></tr>`;
+      }
+
+      state.opname.forEach((item) => {
+        const skuValue = item.sku || item.kode_barang || '';
+        const namaValue = item.nama_barang || item.nama_produk || '-';
+        const category = getOpnameCategory(namaValue);
+        const rakLabel = item.rak_code ? escapeHtml(item.rak_code) : '-';
+        const stokLabel = getProductStokSistem(item);
+
+        body.innerHTML += `
+          <tr id="row-${escapeHtml(skuValue)}" data-category="${category}" data-rak-barcode="${escapeHtml(item.rak_barcode || '')}" data-visible="true" data-scanned="false">
+            <td>${escapeHtml(skuValue)}</td>
+            <td>${escapeHtml(namaValue)}</td>
+            <td>${rakLabel}</td>
+            <td><span class="status-badge status-safe">${getOpnameCategoryLabel(category)}</span></td>
+            <td id="sys-${escapeHtml(skuValue)}">${formatNumber(stokLabel)}</td>
+            <td>
+              <input
+                type="number"
+                class="input-opname"
+                id="fisik-${escapeHtml(skuValue)}"
+                oninput="hitungSelisih('${escapeHtml(skuValue)}')"
+                onkeydown="handleOpnameInputKey(event, '${escapeHtml(skuValue)}')"
+                placeholder="Qty fisik"
+                min="0"
+              />
+            </td>
+            <td id="selisih-${escapeHtml(skuValue)}">0</td>
+          </tr>
+        `;
+      });
+
+      updateSummary();
+      filterOpname();
+    } else {
+      refreshOpnameMetrics();
     }
-
-    state.opname.forEach((item, index) => {
-      const skuValue = item.sku || item.kode_barang || '';
-      const namaValue = item.nama_barang || item.nama_produk || '-';
-      const category = getOpnameCategory(namaValue);
-      const rakLabel = item.rak_code ? escapeHtml(item.rak_code) : '-';
-      const stokLabel = item.stok_sistem ?? item.qty_stok ?? item.stok ?? 0;
-
-      body.innerHTML += `
-        <tr id="row-${escapeHtml(skuValue)}" data-category="${category}" data-rak-barcode="${escapeHtml(item.rak_barcode || '')}" data-visible="true" data-scanned="false">
-          <td>${escapeHtml(skuValue)}</td>
-          <td>${escapeHtml(namaValue)}</td>
-          <td>${rakLabel}</td>
-          <td><span class="status-badge status-safe">${getOpnameCategoryLabel(category)}</span></td>
-          <td id="sys-${escapeHtml(skuValue)}">${formatNumber(stokLabel)}</td>
-          <td>
-            <input
-              type="number"
-              class="input-opname"
-              id="fisik-${escapeHtml(skuValue)}"
-              oninput="hitungSelisih('${escapeHtml(skuValue)}')"
-              onkeydown="handleOpnameInputKey(event, '${escapeHtml(skuValue)}')"
-              placeholder="Qty fisik"
-              min="0"
-            />
-          </td>
-          <td id="selisih-${escapeHtml(skuValue)}">0</td>
-        </tr>
-      `;
-    });
-
-    updateSummary();
-    filterOpname();
   } catch (error) {
     console.error('Stok sistem error:', error);
     showToast(error.message || 'Gagal memuat stok sistem', false);
@@ -1704,7 +1715,8 @@ function saveScannedOpnameRow(sku) {
   }
 
   updateSummary();
-  document.getElementById('scanOpnameResult').value = '';
+  const scanResultInput = document.getElementById('scanOpnameResult');
+  if (scanResultInput) scanResultInput.value = '';
   document.getElementById('scanOpnameStatus').textContent = `Mode scan: ${opnameScannerMode}`;
   showToast(`Data ${sku} disimpan. Lanjut scan berikutnya.`);
 }
@@ -1735,7 +1747,56 @@ function hasOpnameInput(row) {
   return row.dataset.scanned === 'true' || (input && input.value !== '');
 }
 
+function refreshOpnameMetrics() {
+  const hasTable = Boolean(document.getElementById('opnameBody'));
+  if (hasTable) {
+    updateSummary();
+    return;
+  }
+
+  const totalSku = state.opname.length;
+  let totalSistem = 0;
+  let totalFisik = 0;
+  let totalSelisih = 0;
+  let problem = 0;
+  const scannedCount = Object.keys(state.opnameScan).length;
+
+  Object.values(state.opnameScan).forEach(item => {
+    totalSistem += Number(item.sistem || 0);
+    totalFisik += Number(item.fisik || 0);
+    totalSelisih += Number(item.selisih ?? (item.fisik - item.sistem));
+    if (Number(item.selisih ?? (item.fisik - item.sistem)) !== 0) problem += 1;
+  });
+
+  const remaining = Math.max(totalSku - scannedCount, 0);
+  const progress = totalSku ? Math.round((scannedCount / totalSku) * 100) : 0;
+
+  setText('kpi_opname_total', formatNumber(totalSku));
+  setText('kpi_opname_counted', formatNumber(scannedCount));
+  setText('kpi_opname_progress', `${progress}% progress`);
+  setText('kpi_opname_sistem', formatNumber(totalSistem));
+  setText('kpi_opname_fisik', formatNumber(totalFisik));
+  setText('kpi_opname_selisih', formatNumber(totalSelisih));
+  setText('kpi_opname_problem', formatNumber(problem));
+  setText('kpi_opname_remaining', `${formatNumber(remaining)} belum dihitung`);
+  setText('sum_total', formatNumber(scannedCount));
+  setText('sum_selisih', formatNumber(totalSelisih));
+  setText('sum_problem', formatNumber(problem));
+
+  const progressBar = document.getElementById('opnameProgressBar');
+  if (progressBar) progressBar.style.width = `${progress}%`;
+
+  const lastScan = Object.keys(state.opnameScan).at(-1);
+  setText('opnameLastScanBadge', lastScan ? `Terakhir: ${lastScan}` : 'Belum ada scan');
+}
+
 function updateSummary() {
+  const body = document.getElementById('opnameBody');
+  if (!body) {
+    refreshOpnameMetrics();
+    return;
+  }
+
   const totalSku = document.querySelectorAll('#opnameBody tr[id^="row-"]').length;
   let totalSistem = 0;
   let totalFisik = 0;
@@ -1910,6 +1971,7 @@ async function simpanOpname() {
 
     showToast(data.message || 'Opname berhasil disimpan');
     resetOpnameScanState();
+    refreshOpnameMetrics();
     await loadHistory();
     showOpnameTab(null, 'opnameHistory');
   } catch (error) {
@@ -1989,25 +2051,60 @@ async function importOpnameCSV() {
     return;
   }
 
-  if (!document.querySelectorAll('#opnameBody tr').length) {
+  if (!state.opname.length) {
     await loadStokSistem();
   }
 
   let applied = 0;
   let skipped = 0;
+  const hasTable = Boolean(document.getElementById('opnameBody'));
 
   csv.split(/\r?\n/).slice(1).filter(Boolean).forEach(line => {
     const [skuRaw, stokFisikRaw] = line.split(',').map(item => item.trim());
-    const input = document.getElementById(`fisik-${skuRaw}`);
-    if (!skuRaw || !stokFisikRaw || !input) {
+    if (!skuRaw || !stokFisikRaw) {
       skipped += 1;
       return;
     }
 
-    input.value = String(Number(stokFisikRaw));
-    input.closest('tr')?.setAttribute('data-scanned', 'true');
-    input.closest('tr')?.setAttribute('data-visible', 'true');
-    hitungSelisih(skuRaw);
+    const product = state.opname.find(item =>
+      String(item.sku || item.kode_barang || '').toLowerCase() === skuRaw.toLowerCase()
+    );
+
+    if (!product) {
+      skipped += 1;
+      return;
+    }
+
+    const fisikQty = Number(stokFisikRaw);
+    if (!Number.isFinite(fisikQty) || fisikQty < 0) {
+      skipped += 1;
+      return;
+    }
+
+    const sistem = getProductStokSistem(product);
+    const sku = product.sku || product.kode_barang;
+
+    if (hasTable) {
+      const input = document.getElementById(`fisik-${sku}`);
+      if (!input) {
+        skipped += 1;
+        return;
+      }
+
+      input.value = String(fisikQty);
+      input.closest('tr')?.setAttribute('data-scanned', 'true');
+      input.closest('tr')?.setAttribute('data-visible', 'true');
+      hitungSelisih(sku);
+    } else {
+      state.opnameScan[sku] = {
+        nama: product.nama_barang || product.nama_produk,
+        sistem,
+        fisik: fisikQty,
+        selisih: fisikQty - sistem
+      };
+      updateOpnameScanSummary();
+    }
+
     applied += 1;
   });
 
@@ -2016,12 +2113,16 @@ async function importOpnameCSV() {
   document.querySelector('.tab-menu-opname button:nth-child(2)')?.classList.add('active-tab');
 }
 
-function applyManualOpnameScan() {
+async function applyManualOpnameScan() {
   const input = document.getElementById('manualOpnameScan');
   const sku = input?.value?.trim();
   if (!sku) {
     showToast('Isi SKU atau barcode produk terlebih dahulu', false);
     return;
+  }
+
+  if (!state.opname.length) {
+    await loadStokSistem();
   }
 
   // Cari produk di state.opname
@@ -2047,7 +2148,7 @@ function applyManualOpnameScan() {
 }
 
 function promptOpnameQty(product) {
-  const systemQty = product.stok_sistem ?? product.qty_stok ?? 0;
+  const systemQty = getProductStokSistem(product);
   const currentQty = state.opnameScan[product.sku]?.fisik || '';
   
   const qty = prompt(
@@ -2074,6 +2175,7 @@ function promptOpnameQty(product) {
   // Update display
   displayScanResult(product, fisikQty, systemQty);
   updateOpnameScanSummary();
+  refreshOpnameMetrics();
 
   // Clear input dan focus kembali
   const input = document.getElementById('manualOpnameScan');
@@ -2137,6 +2239,7 @@ function updateOpnameScanSummary() {
   setText('scanSistem', formatNumber(totalSistem));
   setText('scanFisik', formatNumber(totalFisik));
   setText('scanSelisih', formatNumber(totalSelisih));
+  refreshOpnameMetrics();
 }
 
 function loadScannerLibrary() {
@@ -2235,9 +2338,11 @@ function resetOpnameScanState() {
   state.opnameScan = {};
   document.getElementById('manualOpnameScan').value = '';
   document.getElementById('scanOpnameStatus').textContent = 'Siap scan';
-  document.getElementById('opnameScanResult').style.display = 'none';
+  const resultPanel = document.getElementById('opnameScanResult');
+  if (resultPanel) resultPanel.style.display = 'none';
   updateOpnameScanSummary();
-  document.getElementById('manualOpnameScan').focus();
+  refreshOpnameMetrics();
+  document.getElementById('manualOpnameScan')?.focus();
 }
 
 function setOpnameScannerMode(mode) {
