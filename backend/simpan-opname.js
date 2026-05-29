@@ -10,6 +10,7 @@ export default async function handler(req, res) {
   let transactionStarted = false;
   try {
     const { tanggal, items, checker, lokasi, keterangan, perintah_id } = req.body;
+    const partial = Boolean(req.body?.partial);
 
     if (!perintah_id) {
       return res.status(400).json({ error: "perintah_id wajib. Pilih perintah SO dari tab Hasil SO terlebih dahulu." });
@@ -149,14 +150,17 @@ export default async function handler(req, res) {
       `, [totalItemSelisih, totalSelisihNet, opnameId]);
     }
 
+    const perintahStatusSql = partial ? "status = 'proses'," : "status = 'selesai',";
+    const completedAtSql = partial ? "completed_at = NULL," : "completed_at = COALESCE(completed_at, NOW()),";
+
     await client.query(`
       UPDATE stok_opname_perintah
       SET
-        status = 'selesai',
+        ${perintahStatusSql}
         checker = COALESCE($2, checker),
         lokasi = COALESCE($3, lokasi),
         opname_id = $4,
-        completed_at = COALESCE(completed_at, NOW()),
+        ${completedAtSql}
         updated_at = NOW()
       WHERE id = $1
     `, [perintah.id, checker || null, lokasi || null, opnameId]);

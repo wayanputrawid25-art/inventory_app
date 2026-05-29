@@ -1598,6 +1598,30 @@ function getOpnameCategoryLabel(category) {
   return labels[category] || "Lain-lain";
 }
 
+function normalizeKategoriTargets(targets) {
+  const allowed = ['modul', 'seragam', 'poster', 'lain-lain'];
+  if (Array.isArray(targets)) {
+    return [...new Set(targets
+      .map((item) => String(item || '').trim().toLowerCase())
+      .filter((item) => allowed.includes(item)))];
+  }
+
+  if (typeof targets === 'string' && targets.trim()) {
+    try {
+      const parsed = JSON.parse(targets);
+      if (Array.isArray(parsed)) return normalizeKategoriTargets(parsed);
+    } catch {
+      // continue to comma-split logic
+    }
+    return [...new Set(targets
+      .split(',')
+      .map((item) => String(item || '').trim().toLowerCase())
+      .filter((item) => allowed.includes(item)))];
+  }
+
+  return [];
+}
+
 let opnameScanner = null;
 let opnameScannerMode = 'barang';
 
@@ -1737,10 +1761,13 @@ function showOpnameRow(row) {
 function handleOpnameInputKey(event, sku) {
   if (event.key !== 'Enter') return;
   event.preventDefault();
-  saveScannedOpnameRow(sku);
+  saveScannedOpnameRow(sku).catch((error) => {
+    console.error('Save scan row error:', error);
+    showToast(error.message || 'Gagal menyimpan data scan', false);
+  });
 }
 
-function saveScannedOpnameRow(sku) {
+async function saveScannedOpnameRow(sku) {
   const input = document.getElementById(`fisik-${sku}`);
   if (!input) return;
 
@@ -1753,6 +1780,18 @@ function saveScannedOpnameRow(sku) {
   hitungSelisih(sku);
 
   const row = document.getElementById(`row-${sku}`);
+  const nama = row?.children[1]?.textContent?.trim() || '';
+  const sistem = Number((document.getElementById(`sys-${sku}`)?.textContent || '0').replace(/\./g, '').replace(/,/g, ''));
+  const fisik = Number(input.value || 0);
+  const selisih = fisik - sistem;
+
+  state.opnameScan[sku] = {
+    nama,
+    sistem,
+    fisik,
+    selisih
+  };
+
   if (row) {
     row.dataset.scanned = 'true';
     row.dataset.visible = 'true';
@@ -1762,10 +1801,12 @@ function saveScannedOpnameRow(sku) {
   }
 
   updateSummary();
+  updateOpnameScanSummary();
   const scanResultInput = document.getElementById('scanOpnameResult');
   if (scanResultInput) scanResultInput.value = '';
   document.getElementById('scanOpnameStatus').textContent = `Mode scan: ${opnameScannerMode}`;
   showToast(`Data ${sku} disimpan. Lanjut scan berikutnya.`);
+  await autoSaveOpname({ silent: true });
 }
 
 function hitungSelisih(sku) {
@@ -2148,7 +2189,7 @@ async function simpanOpname() {
       body: JSON.stringify(body)
     });
 
-    showToast(data.message || 'Hasil opname berhasil dicatat');
+    showToast(data.message || 'Hasil opname berhasil difinalisasi');
     stopOpnameScanner();
     state.activePerintah = null;
     state.opnameScan = {};
@@ -2298,37 +2339,41 @@ async function importOpnameCSV() {
 }
 
 async function applyManualOpnameScan() {
-  if (!state.activePerintah?.id) {
-    showToast('Pilih perintah SO dari tab Hasil SO terlebih dahulu', false);
-    showOpnameTab(null, 'opnameHasil');
-    return;
+  try {
+    if (!state.activePerintah?.id) {
+      showToast('Pilih perintah SO dari tab Hasil SO terlebih dahulu', false);
+      showOpnameTab(null, 'opnameHasil');
+      return;
+    }
+
+    const input = document.getElementById('manualOpnameScan');
+    const sku = input?.value?.trim();
+    if (!sku) {
+      showToast('Isi SKU atau barcode produk terlebih dahulu', false);
+      return;
+    }
+
+    if (!state.opname.length) {
+      await loadStokSistem();
+    }
+
+    const product = state.opname.find(p => 
+      p.sku?.toLowerCase() === sku.toLowerCase() || 
+      p.kode_barang?.toLowerCase() === sku.toLowerCase()
+    );
+
+    if (!product) {
+      showToast(`SKU "${sku}" tidak ditemukan di stok sistem periode ini`, false);
+      input.value = '';
+      input.focus();
+      return;
+    }
+
+    await promptOpnameQty(product);
+  } catch (error) {
+    console.error('Manual opname scan error:', error);
+    showToast(error.message || 'Gagal memproses scan manual', false);
   }
-
-  const input = document.getElementById('manualOpnameScan');
-  const sku = input?.value?.trim();
-  if (!sku) {
-    showToast('Isi SKU atau barcode produk terlebih dahulu', false);
-    return;
-  }
-
-  if (!state.opname.length) {
-    await loadStokSistem();
-  }
-
-  // Cari produk di state.opname
-  const product = state.opname.find(p => 
-    p.sku?.toLowerCase() === sku.toLowerCase() || 
-    p.kode_barang?.toLowerCase() === sku.toLowerCase()
-  );
-
-  if (!product) {
-    showToast(`SKU "${sku}" tidak ditemukan di stok sistem periode ini`, false);
-    input.value = '';
-    input.focus();
-    return;
-  }
-
-  await promptOpnameQty(product);
 }
 
 let opnameQtyModalResolver = null;
@@ -2487,6 +2532,7 @@ async function promptOpnameQty(product) {
   displayScanResult(product, fisikQty, systemQty);
   updateOpnameScanSummary();
   refreshOpnameMetrics();
+  await autoSaveOpname({ silent: true });
 
   const input = document.getElementById('manualOpnameScan');
   if (input) {
@@ -2554,6 +2600,37 @@ function updateOpnameScanSummary() {
   refreshOpnameMetrics();
   if (typeof renderActivePerintahKategoriIndicator === 'function') {
     renderActivePerintahKategoriIndicator();
+  }
+}
+
+async function autoSaveOpname({ silent = true } = {}) {
+  if (!state.activePerintah?.id) return;
+  const items = Object.entries(state.opnameScan).map(([sku, data]) => ({
+    sku,
+    sistem: Number(data.sistem || 0),
+    fisik: Number(data.fisik || 0)
+  }));
+  if (!items.length) return;
+
+  try {
+    const body = {
+      tanggal: getTodayLocalDate(),
+      checker: document.getElementById('opnameChecker')?.value?.trim() || null,
+      lokasi: document.getElementById('opnameGudang')?.value?.trim() || null,
+      items,
+      perintah_id: state.activePerintah.id,
+      keterangan: state.activePerintah.keterangan || null,
+      partial: true
+    };
+
+    await fetchJson('/api/simpan-opname', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  } catch (error) {
+    console.error('Auto save opname error:', error);
+    if (!silent) showToast(error.message || 'Gagal menyimpan opname otomatis', false);
   }
 }
 

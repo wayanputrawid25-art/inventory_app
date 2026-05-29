@@ -902,8 +902,9 @@
                   <input type="text" id="manualOpnameScan" placeholder="Scan / Ketik SKU atau barcode" onkeydown="if(event.key==='Enter'){event.preventDefault();applyManualOpnameScan();}">
                   <button type="button" class="btn-primary" onclick="applyManualOpnameScan()"><i data-lucide="search"></i><span>Cari</span></button>
                 </div>
+                <p class="opname-help-text" style="margin-top: 12px;">Scan atau input qty fisik akan otomatis disimpan ke database. Gunakan tombol <strong>Finalisasi Hasil</strong> untuk menyelesaikan perintah SO dan menutup hasil.</p>
                 <div class="scanner-actions top-space">
-                  <button type="button" onclick="simpanOpname()" class="btn-primary" style="flex:1"><i data-lucide="save"></i><span>Simpan Hasil (Catat)</span></button>
+                  <button type="button" onclick="simpanOpname()" class="btn-primary" style="flex:1"><i data-lucide="save"></i><span>Finalisasi Hasil</span></button>
                   <button type="button" onclick="resetOpnameScanState()" class="btn-secondary" style="flex:1"><i data-lucide="refresh-cw"></i><span>Reset Scan</span></button>
                 </div>
               </div>

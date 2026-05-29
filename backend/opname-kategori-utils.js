@@ -45,8 +45,7 @@ export function normalizeKategoriTargets(value) {
 }
 
 export function serializeKategoriTargets(targets) {
-  const normalized = normalizeKategoriTargets(targets);
-  return JSON.stringify(normalized.length ? normalized : OPNAME_KATEGORI_LIST);
+  return JSON.stringify(normalizeKategoriTargets(targets));
 }
 
 export async function ensurePerintahKategoriColumn() {

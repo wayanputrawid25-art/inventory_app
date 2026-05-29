@@ -51,6 +51,31 @@ function setPerintahFormMode(editing) {
   if (window.lucide) lucide.createIcons();
 }
 
+const OPNAME_KATEGORI_LIST = ['modul', 'seragam', 'poster', 'lain-lain'];
+
+function normalizeKategoriTargets(targets) {
+  if (Array.isArray(targets)) {
+    return [...new Set(targets
+      .map((item) => String(item || '').trim().toLowerCase())
+      .filter((item) => OPNAME_KATEGORI_LIST.includes(item)))];
+  }
+
+  if (typeof targets === 'string' && targets.trim()) {
+    try {
+      const parsed = JSON.parse(targets);
+      if (Array.isArray(parsed)) return normalizeKategoriTargets(parsed);
+    } catch {
+      // fall through to comma-separated parsing
+    }
+    return [...new Set(targets
+      .split(',')
+      .map((item) => String(item || '').trim().toLowerCase())
+      .filter((item) => OPNAME_KATEGORI_LIST.includes(item)))];
+  }
+
+  return [];
+}
+
 function getSelectedPerintahKategori() {
   return [...document.querySelectorAll('input[name="perintahKategori"]:checked')]
     .map((input) => input.value)
@@ -58,9 +83,9 @@ function getSelectedPerintahKategori() {
 }
 
 function setPerintahKategoriCheckboxes(targets) {
-  const normalized = new Set(Array.isArray(targets) ? targets : []);
+  const normalized = new Set(normalizeKategoriTargets(targets));
   document.querySelectorAll('input[name="perintahKategori"]').forEach((input) => {
-    input.checked = normalized.size ? normalized.has(input.value) : true;
+    input.checked = normalized.size ? normalized.has(input.value) : false;
   });
 }
 
@@ -107,7 +132,7 @@ function renderPeriodKategoriIndicators() {
 }
 
 function computeClientKategoriProgress(perintah) {
-  const targets = perintah?.kategori_targets || [];
+  const targets = normalizeKategoriTargets(perintah?.kategori_targets || []);
   if (!targets.length || !state.opname.length) return perintah?.kategori_progress || [];
 
   const totals = {};
@@ -507,7 +532,7 @@ function updateOpnameInputVisibility() {
   if (active) active.style.display = hasPerintah ? 'block' : 'none';
 
   setText('activeSoKode', state.activePerintah?.kode_so || '-');
-  const kategoriLabel = (state.activePerintah?.kategori_targets || [])
+  const kategoriLabel = normalizeKategoriTargets(state.activePerintah?.kategori_targets || [])
     .map((key) => getOpnameCategoryLabel(key))
     .join(', ');
   const meta = state.activePerintah
