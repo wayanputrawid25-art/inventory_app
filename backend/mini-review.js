@@ -8,39 +8,45 @@ export default async function handler(req, res) {
 
     const result = await pool.query(
       `
+      WITH grouped_products AS (
+        SELECT
+          CASE
+            WHEN p.nama_produk ILIKE 'Modul Membaca Level 1.%' THEN 'Modul Membaca Level 1'
+            WHEN p.nama_produk ILIKE 'Modul Membaca Level 2.%' THEN 'Modul Membaca Level 2'
+            WHEN p.nama_produk ILIKE 'Modul Membaca Level 3.%' THEN 'Modul Membaca Level 3'
+            WHEN p.nama_produk ILIKE 'Modul Expro PU Level 1.%' THEN 'Modul Expro PU Level 1'
+            WHEN p.nama_produk ILIKE 'Modul Expro PU Level 2.%' THEN 'Modul Expro PU Level 2'
+            WHEN p.nama_produk ILIKE 'Modul Expro MD Level 1.%' THEN 'Modul Expro MD Level 1'
+            WHEN p.nama_produk ILIKE 'Modul Expro MD Level 2.%' THEN 'Modul Expro MD Level 2'
+            WHEN p.nama_produk ILIKE 'Modul Expro MD Level 3.%' THEN 'Modul Expro MD Level 3'
+            WHEN p.nama_produk ILIKE 'Modul Expro MD Level 4.%' THEN 'Modul Expro MD Level 4'
+            WHEN p.nama_produk ILIKE '%tas%' THEN 'Tas'
+            ELSE NULL
+          END AS grouping,
+          j.qty
+        FROM penjualan j
+        JOIN produk p ON p.sku = j.sku
+        WHERE j.tanggal >= make_date($2::int, $1::int, 1)
+          AND j.tanggal < (make_date($2::int, $1::int, 1) + interval '1 month')::date
+          AND (
+            p.nama_produk ILIKE 'Modul Membaca Level 1.%'
+            OR p.nama_produk ILIKE 'Modul Membaca Level 2.%'
+            OR p.nama_produk ILIKE 'Modul Membaca Level 3.%'
+            OR p.nama_produk ILIKE 'Modul Expro PU Level 1.%'
+            OR p.nama_produk ILIKE 'Modul Expro PU Level 2.%'
+            OR p.nama_produk ILIKE 'Modul Expro MD Level 1.%'
+            OR p.nama_produk ILIKE 'Modul Expro MD Level 2.%'
+            OR p.nama_produk ILIKE 'Modul Expro MD Level 3.%'
+            OR p.nama_produk ILIKE 'Modul Expro MD Level 4.%'
+            OR p.nama_produk ILIKE '%tas%'
+          )
+      )
       SELECT
-        CASE
-          WHEN p.nama_produk ILIKE 'Modul Membaca Level 1.%' THEN 'Modul Membaca Level 1'
-          WHEN p.nama_produk ILIKE 'Modul Membaca Level 2.%' THEN 'Modul Membaca Level 2'
-          WHEN p.nama_produk ILIKE 'Modul Membaca Level 3.%' THEN 'Modul Membaca Level 3'
-          WHEN p.nama_produk ILIKE 'Modul Expro PU Level 1.%' THEN 'Modul Expro PU Level 1'
-          WHEN p.nama_produk ILIKE 'Modul Expro PU Level 2.%' THEN 'Modul Expro PU Level 2'
-          WHEN p.nama_produk ILIKE 'Modul Expro MD Level 1.%' THEN 'Modul Expro MD Level 1'
-          WHEN p.nama_produk ILIKE 'Modul Expro MD Level 2.%' THEN 'Modul Expro MD Level 2'
-          WHEN p.nama_produk ILIKE 'Modul Expro MD Level 3.%' THEN 'Modul Expro MD Level 3'
-          WHEN p.nama_produk ILIKE 'Modul Expro MD Level 4.%' THEN 'Modul Expro MD Level 4'
-          WHEN p.nama_produk ILIKE '%tas%' THEN 'Tas'
-          ELSE NULL
-        END AS grouping,
-        COALESCE(SUM(j.qty), 0) AS total
-      FROM penjualan j
-      JOIN produk p ON p.sku = j.sku
-      WHERE j.tanggal >= make_date($2::int, $1::int, 1)
-        AND j.tanggal < (make_date($2::int, $1::int, 1) + interval '1 month')::date
-        AND (
-          p.nama_produk ILIKE 'Modul Membaca Level 1.%'
-          OR p.nama_produk ILIKE 'Modul Membaca Level 2.%'
-          OR p.nama_produk ILIKE 'Modul Membaca Level 3.%'
-          OR p.nama_produk ILIKE 'Modul Expro PU Level 1.%'
-          OR p.nama_produk ILIKE 'Modul Expro PU Level 2.%'
-          OR p.nama_produk ILIKE 'Modul Expro MD Level 1.%'
-          OR p.nama_produk ILIKE 'Modul Expro MD Level 2.%'
-          OR p.nama_produk ILIKE 'Modul Expro MD Level 3.%'
-          OR p.nama_produk ILIKE 'Modul Expro MD Level 4.%'
-          OR p.nama_produk ILIKE '%tas%'
-        )
+        grouping,
+        COALESCE(SUM(qty), 0) AS total
+      FROM grouped_products
+      WHERE grouping IS NOT NULL
       GROUP BY grouping
-      HAVING grouping IS NOT NULL
       ORDER BY
         CASE
           WHEN grouping = 'Modul Membaca Level 1' THEN 1
