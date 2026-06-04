@@ -82,6 +82,17 @@ export default async function handler(req, res) {
     res.status(200).json({ modul, tas_total: tasTotal });
   } catch (err) {
     console.error("MINI REVIEW ERROR:", err);
-    res.status(500).json({ error: err.message });
+    const message = err?.message || "Terjadi error saat mengambil data mini review.";
+    const isDbError = err?.code === 'ECONNREFUSED' || message.includes('DATABASE_URL');
+
+    if (isDbError) {
+      return res.status(200).json({
+        modul: [],
+        tas_total: 0,
+        message: "Database tidak tersedia. Periksa konfigurasi DATABASE_URL dan koneksi PostgreSQL."
+      });
+    }
+
+    res.status(500).json({ error: message });
   }
 }

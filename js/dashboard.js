@@ -495,7 +495,13 @@ async function loadMiniReview() {
   try {
     const data = await fetchJson(`/api/mini-review?${getQueryParams(false).toString()}`);
     if (!data || !Array.isArray(data.modul)) {
-      content.innerHTML = `<p>Data mini review tidak tersedia untuk periode ini.</p>`;
+      const message = data?.message || "Data mini review tidak tersedia untuk periode ini.";
+      content.innerHTML = `<p>${escapeHtml(message)}</p>`;
+      return;
+    }
+
+    if (data.message) {
+      content.innerHTML = `<p>${escapeHtml(data.message)}</p>`;
       return;
     }
 
