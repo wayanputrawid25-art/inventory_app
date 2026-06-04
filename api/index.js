@@ -27,10 +27,12 @@ import templatePenjualanHandler from "../backend/template-penjualan.js";
 import templateStokAwalHandler from "../backend/template-stok_awal.js";
 import topOutletHandler from "../backend/top-outlet.js";
 import topProdukHandler from "../backend/top-produk.js";
+import miniReviewHandler from "../backend/mini-review.js";
 
 const routes = {
   "GET /kpi": kpiHandler,
   "GET /chart": chartHandler,
+  "GET /mini-review": miniReviewHandler,
   "GET /top-produk": topProdukHandler,
   "GET /top-outlet": topOutletHandler,
   "GET /outlet-status": outletStatusHandler,

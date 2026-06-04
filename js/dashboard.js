@@ -479,8 +479,49 @@ function showTab(event, id) {
   if (target) target.style.display = "block";
   if (event) event.target.classList.add("active-tab");
 
-  if (id === "chartTab") loadChart();
+  if (id === "chartTab") {
+    loadChart();
+    loadMiniReview();
+  }
   if (id === "outletTransactionTab") loadOutletTransactionMonitor();
+}
+
+async function loadMiniReview() {
+  const content = document.getElementById("miniReviewContent");
+  if (!content) return;
+
+  try {
+    const data = await fetchJson(`/api/mini-review?${getQueryParams(false).toString()}`);
+    if (!data || !Array.isArray(data.modul)) {
+      content.innerHTML = `<p>Data mini review tidak tersedia untuk periode ini.</p>`;
+      return;
+    }
+
+    const modulRows = data.modul
+      .map(item => `
+        <li>
+          <span>${escapeHtml(item.level)}</span>
+          <strong>${formatNumber(item.total)}</strong>
+        </li>
+      `)
+      .join("");
+
+    content.innerHTML = `
+      <div class="mini-review-block">
+        <p><strong>Ringkasan Modul per Level</strong></p>
+        <ul class="mini-review-list">
+          ${modulRows}
+        </ul>
+      </div>
+      <div class="mini-review-block">
+        <p><strong>Ringkasan Tas</strong></p>
+        <p>${formatNumber(data.tas_total)} unit</p>
+      </div>
+    `;
+  } catch (err) {
+    content.innerHTML = `<p>Gagal memuat mini review penjualan.</p>`;
+    console.error("Mini review load error:", err);
+  }
 }
 
 function showModuleTab(event, module, id) {

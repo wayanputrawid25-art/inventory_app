@@ -641,6 +641,29 @@ button:hover {
   margin-top: 18px;
 }
 
+.mini-review-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mini-review-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.mini-review-block + .mini-review-block {
+  margin-top: 16px;
+}
+
+.mini-review-block p {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
 .table-shell,
 .table-wrapper {
   overflow: auto;
