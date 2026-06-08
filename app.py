@@ -7,7 +7,12 @@ import pkgutil
 if not hasattr(pkgutil, 'get_loader'):
     import importlib.util
     def _compat_get_loader(name):
-        spec = importlib.util.find_spec(name)
+        try:
+            if name == '__main__':
+                return None
+            spec = importlib.util.find_spec(name)
+        except ValueError:
+            return None
         return None if spec is None else spec.loader
     pkgutil.get_loader = _compat_get_loader
 
