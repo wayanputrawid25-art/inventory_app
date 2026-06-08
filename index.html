@@ -2168,6 +2168,72 @@
     <div class="credit">Design & UI enhancements: Mr.Wid</div>
   </footer>
 
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav">
+    <button type="button" class="mobile-nav-item" onclick="selectMenu(event,'dashboard')" data-nav="dashboard">
+      <i data-lucide="layout-dashboard"></i>
+      <span>Dashboard</span>
+    </button>
+    <button type="button" class="mobile-nav-item" onclick="selectMenu(event,'persediaan')" data-nav="persediaan">
+      <i data-lucide="package"></i>
+      <span>Stok</span>
+    </button>
+    <button type="button" class="mobile-nav-item mobile-nav-item--primary" onclick="selectMenu(event,'opname')" data-nav="opname">
+      <i data-lucide="clipboard-check"></i>
+      <span>Opname</span>
+    </button>
+    <button type="button" class="mobile-nav-item" onclick="selectMenu(event,'taskcenter')" data-nav="taskcenter">
+      <i data-lucide="list-todo"></i>
+      <span>Task</span>
+    </button>
+    <button type="button" class="mobile-nav-item" onclick="toggleMobileMenu()" data-nav="more">
+      <i data-lucide="menu"></i>
+      <span>More</span>
+    </button>
+  </nav>
+
+  <!-- Mobile Menu Overlay -->
+  <div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="toggleMobileMenu()">
+    <div class="mobile-menu-panel" onclick="event.stopPropagation()">
+      <div class="mobile-menu-panel__header">
+        <h3>Menu</h3>
+        <button type="button" class="mobile-menu-panel__close" onclick="toggleMobileMenu()">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="mobile-menu-panel__content">
+        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'admin')">
+          <i data-lucide="settings"></i>
+          <span>Admin Panel</span>
+        </button>
+        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'penjualan')">
+          <i data-lucide="shopping-cart"></i>
+          <span>Penjualan</span>
+        </button>
+        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'forecast')">
+          <i data-lucide="trending-up"></i>
+          <span>Forecast</span>
+        </button>
+        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'approvalcenter')">
+          <i data-lucide="check-square"></i>
+          <span>Approval Center</span>
+        </button>
+        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'activity')">
+          <i data-lucide="activity"></i>
+          <span>Activity Timeline</span>
+        </button>
+        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'audit')">
+          <i data-lucide="shield"></i>
+          <span>Audit Center</span>
+        </button>
+        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'reports')">
+          <i data-lucide="file-bar-chart"></i>
+          <span>Laporan</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="opnameQtyModal" class="app-modal" aria-hidden="true">
     <div class="app-modal__backdrop" data-opname-qty-close></div>
     <div class="app-modal__dialog opname-qty-dialog" role="dialog" aria-modal="true" aria-labelledby="opnameQtyModalTitle">

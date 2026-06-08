@@ -8,7 +8,7 @@ const MENU_STORAGE_KEY = "inventoryActiveMenu";
 const VALID_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter", "activity", "audit", "reports"];
 const USER_ONLY_MENUS = ["opname"];
 const ADMIN_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter", "activity", "audit", "reports"];
-
+let isMobileMenuOpen = false;
 const state = {
   produkOptions: [],
   auditOutlets: [],
@@ -158,12 +158,12 @@ function getSavedMenu() {
   return canAccessMenu(savedMenu) ? savedMenu : getDefaultMenuForRole();
 }
 
-function toggleMobileMenu() {
-  document.body.classList.toggle("mobile-menu-open");
-}
-
 function closeMobileMenu() {
+  const overlay = document.getElementById('mobileMenuOverlay');
+  if (overlay) overlay.classList.remove('open');
   document.body.classList.remove("mobile-menu-open");
+  document.body.style.overflow = '';
+  isMobileMenuOpen = false;
 }
 
 function bindGlobalFilters() {
@@ -745,6 +745,7 @@ function selectMenu(event, menu) {
   currentMenu = menu;
   window.localStorage.setItem(MENU_STORAGE_KEY, menu);
   closeMobileMenu();
+  updateMobileNavHighlight();
   updatePageHeader(menu);
   updateFilterStatus();
 
@@ -5514,3 +5515,79 @@ function viewReport(reportId) {
   showToast(`Membuka preview laporan ${reportId}...`, true);
   // In a real app, this would open a report preview modal or page
 }
+
+/* ============================================
+   Mobile Navigation Functions
+   ============================================ */
+
+// isMobileMenuOpen is declared at the top of the file
+
+function toggleMobileMenu() {
+  const overlay = document.getElementById('mobileMenuOverlay');
+  isMobileMenuOpen = !isMobileMenuOpen;
+  
+  if (isMobileMenuOpen) {
+    overlay.classList.add('open');
+    document.body.classList.add('mobile-menu-open');
+    document.body.style.overflow = 'hidden';
+  } else {
+    overlay.classList.remove('open');
+    document.body.classList.remove('mobile-menu-open');
+    document.body.style.overflow = '';
+  }
+  
+  // Re-initialize Lucide icons
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
+function updateMobileNavHighlight() {
+  const navItems = document.querySelectorAll('.mobile-nav-item');
+  navItems.forEach(item => {
+    item.classList.remove('active');
+    const navType = item.getAttribute('data-nav');
+    if (navType === currentMenu) {
+      item.classList.add('active');
+    }
+  });
+  
+  // Also highlight in mobile menu panel
+  const menuItems = document.querySelectorAll('.mobile-menu-item');
+  menuItems.forEach(item => {
+    item.classList.remove('active');
+    const onclick = item.getAttribute('onclick');
+    if (onclick && onclick.includes(`'${currentMenu}'`)) {
+      item.classList.add('active');
+    }
+  });
+}
+
+// Handle window resize for responsive behavior
+let resizeTimer;
+window.addEventListener('resize', function() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function() {
+    // Close mobile menu on resize to desktop
+    if (window.innerWidth >= 768 && isMobileMenuOpen) {
+      toggleMobileMenu();
+    }
+  }, 250);
+});
+
+// Handle escape key to close mobile menu
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && isMobileMenuOpen) {
+    toggleMobileMenu();
+  }
+});
+
+// Initialize mobile nav on page load
+document.addEventListener('DOMContentLoaded', function() {
+  updateMobileNavHighlight();
+  
+  // Re-initialize Lucide icons
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+});
