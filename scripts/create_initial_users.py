@@ -1,4 +1,4 @@
-"""
+r"""
 Create initial admin and opname users. Uses app factory to access DB models.
 Usage (PowerShell):
   $env:DATABASE_URL='postgresql+psycopg2://user:pass@host:port/dbname?sslmode=require'
@@ -6,15 +6,20 @@ Usage (PowerShell):
 
 This will create two users if they do not exist: role 'admin' and 'checker_opname'.
 """
-import os
-import sys
 import argparse
-from app import create_app
-from flask_app.utils.auth import AuthService
-from flask_app.models import db, User, RoleEnum
+import sys
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 
 def create_users(admin_creds, opname_creds):
+    from app import create_app
+    from flask_app.models import RoleEnum, User, db
+    from flask_app.utils.auth import AuthService
+
     app = create_app()
     with app.app_context():
         admin_username, admin_password = admin_creds.split(':', 1)
@@ -51,9 +56,13 @@ def create_users(admin_creds, opname_creds):
         db.session.commit()
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--admin', required=True, help='admin_username:password')
     parser.add_argument('--opname', required=True, help='opname_username:password')
     args = parser.parse_args()
     create_users(args.admin, args.opname)
+
+
+if __name__ == '__main__':
+    main()

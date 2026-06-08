@@ -21,26 +21,63 @@
       <button id="loginButton" class="btn-secondary" onclick="openLogin('user')">Masuk</button>
     </div>
   </header>
-  <!-- Login modal -->
-  <div id="loginModal" class="login-modal" style="display:none;">
-    <div class="login-panel">
-      <h3>Masuk ke Dashboard</h3>
-      <p class="page-caption" id="loginModeCaption">Pilih akses user untuk operasional atau admin untuk pengaturan penuh.</p>
-      <div class="login-mode-tabs" role="tablist" aria-label="Pilihan akses login">
-        <button type="button" id="loginModeUser" class="active-tab" onclick="setLoginMode('user')">User Operasional</button>
-        <button type="button" id="loginModeAdmin" onclick="setLoginMode('admin')">Admin</button>
+  <!-- Login-first auth gate -->
+  <section id="loginModal" class="auth-gate" aria-label="Login dashboard">
+    <div class="auth-gate__shell">
+      <div class="auth-hero-panel">
+        <div class="auth-brand-mark">
+          <img src="/assets/logo.png" alt="CV EPIC Warehouse">
+          <div>
+            <p>Inventory Control Suite</p>
+            <h1>CV EPIC Warehouse</h1>
+          </div>
+        </div>
+        <div class="auth-hero-copy">
+          <h2>Masuk untuk mengelola stok, opname, dan persediaan warehouse.</h2>
+          <p>Dashboard dikunci sampai sesi user aktif agar data operasional tetap aman dan setiap akses mengikuti role.</p>
+        </div>
+        <div class="auth-capability-grid">
+          <div>
+            <strong>Sales</strong>
+            <span>Monitoring penjualan dan outlet.</span>
+          </div>
+          <div>
+            <strong>Stock</strong>
+            <span>Kontrol persediaan warehouse.</span>
+          </div>
+          <div>
+            <strong>Opname</strong>
+            <span>Input dan sesuaikan hasil SO.</span>
+          </div>
+        </div>
       </div>
-      <label class="filter-control">
-        <span>Username</span>
-        <input type="text" id="loginUsername" placeholder="Username" autocomplete="username">
-      </label>
-      <label class="filter-control">
-        <span>Password</span>
-        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter'){event.preventDefault();performLogin();}">
-      </label>
-      <div class="login-actions">
-        <button class="btn-secondary" onclick="closeLogin()">Batal</button>
-        <button class="btn-primary" onclick="performLogin()">Masuk</button>
+
+      <div class="auth-login-card">
+        <p class="section-eyebrow">Secure Access</p>
+        <h3>Masuk ke Dashboard</h3>
+        <p class="page-caption" id="loginModeCaption">Pilih akses user untuk operasional atau admin untuk pengaturan penuh.</p>
+        <div class="login-mode-tabs" role="tablist" aria-label="Pilihan akses login">
+          <button type="button" id="loginModeUser" class="active-tab" onclick="setLoginMode('user')">
+            <i data-lucide="user-check"></i>
+            User Operasional
+          </button>
+          <button type="button" id="loginModeAdmin" onclick="setLoginMode('admin')">
+            <i data-lucide="shield-check"></i>
+            Admin
+          </button>
+        </div>
+        <div class="auth-mode-note">Gunakan akun sesuai role. User operasional diarahkan ke menu Stok Opname.</div>
+        <label class="filter-control">
+          <span>Username</span>
+          <input type="text" id="loginUsername" placeholder="Username" autocomplete="username">
+        </label>
+        <label class="filter-control">
+          <span>Password</span>
+          <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter'){event.preventDefault();performLogin();}">
+        </label>
+        <div class="login-actions">
+          <button class="btn-primary auth-submit" onclick="performLogin()">Masuk</button>
+        </div>
       </div>
     </div>
   </section>
@@ -1066,15 +1103,30 @@
       }
     }
 
+    function applyAuthState() {
+      const hasAuth = Boolean(getStoredAuth()?.access_token);
+      document.body.classList.toggle('auth-locked', !hasAuth);
+      document.getElementById('loginModal')?.removeAttribute('style');
+      updateAuthHeader();
+      if (!hasAuth) {
+        setLoginMode(loginMode);
+        setTimeout(() => document.getElementById('loginUsername')?.focus(), 50);
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
     function openLogin(mode = 'user') {
       setLoginMode(mode);
-      document.getElementById('loginModal').style.display = 'grid';
+      document.body.classList.add('auth-locked');
+      document.getElementById('loginModal')?.removeAttribute('style');
       setTimeout(() => document.getElementById('loginUsername')?.focus(), 50);
     }
 
     function closeLogin() {
-      if (getStoredAuth()?.access_token) document.body.classList.remove('auth-locked');
+      applyAuthState();
     }
+
+    window.applyAuthState = applyAuthState;
 
     async function performLogin() {
       const user = document.getElementById('loginUsername').value.trim();
@@ -1100,9 +1152,10 @@
         const authData = data.data || data;
         window.localStorage.setItem('auth_user', JSON.stringify(authData));
         document.getElementById('loginPassword').value = '';
-        updateAuthHeader();
+        applyAuthState();
         showToast(`Login ${loginMode === 'admin' ? 'admin' : 'user'} berhasil`, true);
         closeLogin();
+        if (typeof selectMenu === 'function') selectMenu(null, typeof getSavedMenu === 'function' ? getSavedMenu() : 'penjualan');
         applyCurrentFilters();
       } catch (err) {
         console.error(err);
@@ -1123,12 +1176,12 @@
         console.warn('Logout server gagal, sesi lokal tetap dihapus', err);
       } finally {
         window.localStorage.removeItem('auth_user');
-        updateAuthHeader();
+        applyAuthState();
         showToast('Anda sudah keluar', true);
       }
     }
 
-    updateAuthHeader();
+    applyAuthState();
   </script>
   <script>
     // Populate mock KPI data for local preview when backend not available

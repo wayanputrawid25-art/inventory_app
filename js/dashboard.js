@@ -6,6 +6,7 @@ let currentMenu = "penjualan";
 let selectedSalesOutlet = "";
 const MENU_STORAGE_KEY = "inventoryActiveMenu";
 const VALID_MENUS = ["penjualan", "persediaan", "forecast", "opname"];
+const USER_ONLY_MENUS = ["opname"];
 
 const state = {
   produkOptions: [],
