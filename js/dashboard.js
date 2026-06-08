@@ -5590,4 +5590,55 @@ document.addEventListener('DOMContentLoaded', function() {
   if (window.lucide) {
     lucide.createIcons();
   }
+  
+  // Initialize theme from localStorage
+  initTheme();
+});
+
+/* ============================================
+   Theme Toggle Functions
+   ============================================ */
+
+const THEME_STORAGE_KEY = 'inventoryTheme';
+
+function initTheme() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  
+  // Use saved theme or default to dark (existing behavior)
+  const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+  setTheme(theme);
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  setTheme(newTheme);
+  showToast(`Theme switched to ${newTheme} mode`, true);
+}
+
+function setTheme(theme) {
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+  
+  // Re-initialize Lucide icons to update icon visibility
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
+function getCurrentTheme() {
+  return document.documentElement.getAttribute('data-theme') || 'dark';
+}
+
+// Listen for system theme changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+  // Only auto-switch if user hasn't set a preference
+  if (!localStorage.getItem(THEME_STORAGE_KEY)) {
+    setTheme(e.matches ? 'dark' : 'light');
+  }
 });

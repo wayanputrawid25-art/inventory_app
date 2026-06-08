@@ -9,6 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Dark/Light Mode Theme Toggle
+- **Theme Toggle Button** - Added toggle button in header for switching between dark and light themes
+  - Sun icon for switching to light mode
+  - Moon icon for switching to dark mode
+  - Smooth icon transition animation
+  - Persisted theme preference in localStorage
+
+- **CSS Variables System** - Refactored CSS variables for dual-theme support
+  - Dark theme (default): Existing dark color palette
+  - Light theme: Clean, bright color palette with subtle shadows
+  - Shared gradient and transition variables
+  - Easy to extend for future themes
+
+- **Light Theme Adjustments** - Complete light theme styling for all components
+  - Header, sidebar, and navigation elements
+  - Cards, tables, and form elements
+  - Modals and drawer panels
+  - Mobile bottom navigation and menu
+  - Charts and report sections
+
+- **Theme Persistence** - User theme preference saved to localStorage
+  - Remembers user's theme choice across sessions
+  - Respects system preference on first visit
+  - Auto-switches when system theme changes (if no manual preference set)
+
+- **Theme JavaScript Functions** - Added JavaScript for theme management
+  - `initTheme()` - Initialize theme from localStorage or system preference
+  - `toggleTheme()` - Toggle between dark and light modes
+  - `setTheme(theme)` - Set specific theme
+  - `getCurrentTheme()` - Get current active theme
+  - System theme change listener
+
+- **Performance Optimizations**
+  - CSS variables for efficient theme switching
+  - Smooth transitions (0.3s) for color changes
+  - No flash on page load (theme initialized before render)
+
 #### Responsive Mobile
 - **Mobile Bottom Navigation** - Implemented bottom navigation bar for mobile devices
   - Fixed bottom position with 5 key navigation items
@@ -333,7 +370,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Smooth transitions on all interactive elements
 
 ### Files Changed
-- `css/style.css` - Added responsive mobile styles, bottom navigation, tablet sidebar, touch optimizations, and print styles
-- `index.html` - Added mobile bottom navigation bar and slide-in menu panel for additional navigation
-- `js/dashboard.js` - Added mobile navigation functions, resize handlers, and keyboard shortcuts
+- `css/style.css` - Added CSS variables for light theme, theme toggle button styles, and light theme component adjustments
+- `index.html` - Added theme toggle button in header
+- `js/dashboard.js` - Added theme toggle functions, localStorage persistence, and system theme listener
 - `CHANGELOG.md` - Documented all changes

@@ -1,41 +1,95 @@
+/* ============================================
+   CSS Variables - Dark Theme (Default)
+   ============================================ */
+
 :root {
+  /* Background Colors */
   --bg: #1e2124;
   --surface: #2a2e33;
   --surface-strong: #32373d;
   --surface-soft: #25292e;
   --sidebar: #151719;
   --sidebar-soft: #2a2e33;
+  
+  /* Text Colors */
   --text: #f5f7fa;
   --muted: #a8b0ba;
   --line: #3d4450;
+  
+  /* Brand Colors */
   --primary: #ff3b30;
   --primary-strong: #e63229;
   --accent: #ff6b63;
   --success: #34c759;
   --warning: #ffb020;
   --danger: #ff6b6b;
+  
+  /* Shadows */
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
   --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.22);
+  
+  /* Border Radius */
   --radius-xl: 28px;
   --radius-lg: 22px;
   --radius-md: 16px;
   --radius-sm: 10px;
+  
+  /* Gradient Overlays */
+  --gradient-primary: linear-gradient(135deg, var(--primary), var(--accent));
+  --gradient-surface: linear-gradient(180deg, var(--surface-soft) 0%, var(--surface) 100%);
+  
+  /* Theme transition */
+  --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ============================================
+   CSS Variables - Light Theme
+   ============================================ */
+
+[data-theme="light"] {
+  /* Background Colors */
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --surface-strong: #f0f2f5;
+  --surface-soft: #e8ebf0;
+  --sidebar: #ffffff;
+  --sidebar-soft: #f5f7fa;
+  
+  /* Text Colors */
+  --text: #1a1d21;
+  --muted: #6b7280;
+  --line: #d1d5db;
+  
+  /* Shadows - lighter for light mode */
+  --shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 
 * {
   box-sizing: border-box;
+  transition: var(--theme-transition);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Dark theme body gradient overlay */
+:root body {
   background:
     radial-gradient(circle at top left, rgba(255, 59, 48, 0.14), transparent 28%),
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.04), transparent 24%),
     linear-gradient(180deg, #1e2124 0%, #181b1e 100%);
-  color: var(--text);
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background-attachment: fixed;
+}
+
+/* Light theme body background */
+[data-theme="light"] body {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
 }
 
 button,
@@ -8013,11 +8067,211 @@ body:not(.auth-locked) .auth-gate {
   .filter-section input {
     min-height: 44px;
   }
-  
-  /* Hide tooltips on touch */
-  [data-tooltip]:hover::after {
-    display: none;
-  }
+}
+
+/* ============================================
+   Theme Toggle Button
+   ============================================ */
+
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-toggle:hover {
+  background: var(--surface-strong);
+  border-color: var(--primary);
+}
+
+.theme-toggle i {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Default: show sun (for dark mode - click to switch to light) */
+.theme-icon-light {
+  display: block;
+}
+
+.theme-icon-dark {
+  display: none;
+}
+
+/* Light theme: show moon (for light mode - click to switch to dark) */
+[data-theme="light"] .theme-icon-light {
+  display: none;
+}
+
+[data-theme="light"] .theme-icon-dark {
+  display: block;
+}
+
+/* Light theme adjustments for specific components */
+[data-theme="light"] .gradient-text {
+  background: linear-gradient(135deg, var(--primary), #ff6b63);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="light"] .sidebar {
+  background: var(--sidebar);
+  border-right: 1px solid var(--line);
+}
+
+[data-theme="light"] .sidebar-brand {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+[data-theme="light"] .sidebar-nav li {
+  color: var(--text);
+}
+
+[data-theme="light"] .sidebar-nav li:hover,
+[data-theme="light"] .sidebar-nav li.active {
+  background: var(--surface-soft);
+  color: var(--primary);
+}
+
+[data-theme="light"] .sidebar-section__label {
+  color: var(--muted);
+}
+
+[data-theme="light"] .app-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+[data-theme="light"] .stat-card,
+[data-theme="light"] .card,
+[data-theme="light"] .task-card,
+[data-theme="light"] .admin-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+[data-theme="light"] .data-table-container,
+[data-theme="light"] .approval-table-container,
+[data-theme="light"] .audit-table-container,
+[data-theme="light"] .activity-table-container {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+[data-theme="light"] .data-table-header,
+[data-theme="light"] .approval-table-header {
+  background: var(--surface-soft);
+}
+
+[data-theme="light"] .data-table-row:hover,
+[data-theme="light"] .approval-row:hover {
+  background: var(--surface-soft);
+}
+
+[data-theme="light"] .filter-section,
+[data-theme="light"] .approval-filters {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+[data-theme="light"] .filter-section select,
+[data-theme="light"] .approval-filter-tabs,
+[data-theme="light"] .approval-filter-tab {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+[data-theme="light"] .chart-container {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+[data-theme="light"] .recent-reports {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+[data-theme="light"] .report-category-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+[data-theme="light"] .mobile-bottom-nav {
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+[data-theme="light"] .mobile-menu-panel {
+  background: var(--surface);
+}
+
+[data-theme="light"] .mobile-menu-panel__header {
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+[data-theme="light"] .mobile-menu-item {
+  color: var(--text);
+}
+
+[data-theme="light"] .mobile-menu-item:hover,
+[data-theme="light"] .mobile-menu-item.active {
+  background: var(--surface-soft);
+}
+
+[data-theme="light"] .app-modal__dialog {
+  background: var(--surface);
+}
+
+[data-theme="light"] .app-modal__header {
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+[data-theme="light"] .approval-detail-drawer {
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+}
+
+[data-theme="light"] .approval-detail-drawer__header {
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+[data-theme="light"] input:focus,
+[data-theme="light"] select:focus,
+[data-theme="light"] textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.18);
+}
+
+[data-theme="light"] .audit-empty,
+[data-theme="light"] .approval-empty,
+[data-theme="light"] .activity-empty,
+[data-theme="light"] .audit-empty {
+  background: var(--surface);
+  border: 1px solid var(--line);
 }
 
 /* ============================================
