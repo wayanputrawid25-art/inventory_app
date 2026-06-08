@@ -5,9 +5,9 @@ let chartOutletStatus = null;
 let currentMenu = "penjualan";
 let selectedSalesOutlet = "";
 const MENU_STORAGE_KEY = "inventoryActiveMenu";
-const VALID_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter", "activity"];
+const VALID_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter", "activity", "audit"];
 const USER_ONLY_MENUS = ["opname"];
-const ADMIN_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter", "activity"];
+const ADMIN_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter", "activity", "audit"];
 
 const state = {
   produkOptions: [],
@@ -118,6 +118,11 @@ const pageMeta = {
     eyebrow: "System Logs",
     title: "Activity Timeline",
     caption: "Lacak semua aktivitas dan perubahan dalam sistem secara chronological."
+  },
+  audit: {
+    eyebrow: "Compliance & Security",
+    title: "Audit Center",
+    caption: "Lacak perubahan critical, approve actions, dan audit trails untuk compliance."
   }
 };
 
@@ -815,6 +820,11 @@ function selectMenu(event, menu) {
   if (menu === "activity") {
     document.getElementById("activityTab").style.display = "block";
     loadActivityTimeline();
+  }
+
+  if (menu === "audit") {
+    document.getElementById("auditTab").style.display = "block";
+    loadAuditCenter();
   }
 }
 
@@ -4869,4 +4879,443 @@ function openActivityDetail(activityId) {
 function navigateToResource(resourceType, resourceId) {
   showToast(`Navigasi ke ${resourceType}: ${resourceId}`, true);
   // In a real app, this would navigate to the resource detail page
+}
+
+/* ============================================
+   Audit Center Functions
+   ============================================ */
+
+const AUDIT_ACTIONS = {
+  created: { label: 'Created', class: 'audit-action-badge--created', icon: 'plus' },
+  updated: { label: 'Updated', class: 'audit-action-badge--updated', icon: 'edit' },
+  submitted: { label: 'Submitted', class: 'audit-action-badge--submitted', icon: 'send' },
+  approved: { label: 'Approved', class: 'audit-action-badge--approved', icon: 'check-circle' },
+  rejected: { label: 'Rejected', class: 'audit-action-badge--rejected', icon: 'x-circle' },
+  deleted: { label: 'Deleted', class: 'audit-action-badge--deleted', icon: 'trash-2' },
+  login: { label: 'Login', class: 'audit-action-badge--login', icon: 'log-in' },
+  logout: { label: 'Logout', class: 'audit-action-badge--logout', icon: 'log-out' }
+};
+
+const AUDIT_ORIGINS = {
+  web: { label: 'Web UI', icon: 'monitor' },
+  api: { label: 'API', icon: 'code' },
+  mobile: { label: 'Mobile', icon: 'smartphone' }
+};
+
+// Mock audit data
+const mockAuditLogs = [
+  {
+    id: 'AUD-001',
+    timestamp: '2026-06-08 08:45:00',
+    user: { id: 'admin', name: 'Admin', initials: 'AD', role: 'Admin' },
+    action: 'approved',
+    resourceType: 'opname_session',
+    resourceId: 'OP-2024-001',
+    changeSummary: 'status: Submitted → Approved; adjustments_applied: false → true',
+    origin: 'web',
+    before: { status: 'Submitted', adjustments_pending: 12 },
+    after: { status: 'Approved', adjustments_applied: true }
+  },
+  {
+    id: 'AUD-002',
+    timestamp: '2026-06-08 07:30:00',
+    user: { id: 'operator1', name: 'Budi Santoso', initials: 'BS', role: 'Operator' },
+    action: 'submitted',
+    resourceType: 'opname_session',
+    resourceId: 'OP-2024-002',
+    changeSummary: 'Submitted stock opname for Gudang Utama',
+    origin: 'mobile',
+    before: { status: 'In Progress' },
+    after: { status: 'Submitted' }
+  },
+  {
+    id: 'AUD-003',
+    timestamp: '2026-06-08 06:15:00',
+    user: { id: 'admin', name: 'Admin', initials: 'AD', role: 'Admin' },
+    action: 'created',
+    resourceType: 'task',
+    resourceId: 'TASK-001',
+    changeSummary: 'Created task: Lakukan Stok Opname Bulanan',
+    origin: 'web',
+    before: null,
+    after: { title: 'Lakukan Stok Opname Bulanan', priority: 'high', assignee: 'Operator' }
+  },
+  {
+    id: 'AUD-004',
+    timestamp: '2026-06-07 16:45:00',
+    user: { id: 'system', name: 'System', initials: 'SY', role: 'System' },
+    action: 'updated',
+    resourceType: 'item',
+    resourceId: 'SKU-001',
+    changeSummary: 'stock_quantity: 100 → 95; last_updated: 2026-06-07',
+    origin: 'api',
+    before: { stock_quantity: 100 },
+    after: { stock_quantity: 95 }
+  },
+  {
+    id: 'AUD-005',
+    timestamp: '2026-06-07 14:20:00',
+    user: { id: 'admin', name: 'Admin', initials: 'AD', role: 'Admin' },
+    action: 'rejected',
+    resourceType: 'approval',
+    resourceId: 'APR-007',
+    changeSummary: 'Penyesuaian Tas B ditolak - Bukti tidak cukup',
+    origin: 'web',
+    before: { status: 'Pending' },
+    after: { status: 'Rejected', reason: 'Bukti tidak cukup' }
+  },
+  {
+    id: 'AUD-006',
+    timestamp: '2026-06-07 12:00:00',
+    user: { id: 'operator2', name: 'Siti Rahayu', initials: 'SR', role: 'Operator' },
+    action: 'created',
+    resourceType: 'opname_session',
+    resourceId: 'OP-2024-003',
+    changeSummary: 'Created new opname session for Gudang Timur',
+    origin: 'mobile',
+    before: null,
+    after: { location: 'Gudang Timur', status: 'Draft' }
+  },
+  {
+    id: 'AUD-007',
+    timestamp: '2026-06-07 11:30:00',
+    user: { id: 'operator1', name: 'Budi Santoso', initials: 'BS', role: 'Operator' },
+    action: 'updated',
+    resourceType: 'opname_session',
+    resourceId: 'OP-2024-001',
+    changeSummary: 'item_count: 45 → 50; discrepancy_count: 0 → 2',
+    origin: 'mobile',
+    before: { item_count: 45 },
+    after: { item_count: 50, discrepancy_count: 2 }
+  },
+  {
+    id: 'AUD-008',
+    timestamp: '2026-06-07 09:00:00',
+    user: { id: 'operator1', name: 'Budi Santoso', initials: 'BS', role: 'Operator' },
+    action: 'login',
+    resourceType: 'user',
+    resourceId: 'operator1',
+    changeSummary: 'User logged in successfully',
+    origin: 'web',
+    before: null,
+    after: { session_id: 'sess_abc123', ip: '192.168.1.10' }
+  },
+  {
+    id: 'AUD-009',
+    timestamp: '2026-06-07 08:30:00',
+    user: { id: 'admin', name: 'Admin', initials: 'AD', role: 'Admin' },
+    action: 'updated',
+    resourceType: 'approval',
+    resourceId: 'APR-003',
+    changeSummary: 'status: Pending → Recount; notes: Diminta recount Rak A1',
+    origin: 'web',
+    before: { status: 'Pending' },
+    after: { status: 'Recount', notes: 'Diminta recount Rak A1' }
+  },
+  {
+    id: 'AUD-010',
+    timestamp: '2026-06-06 16:45:00',
+    user: { id: 'system', name: 'System', initials: 'SY', role: 'System' },
+    action: 'created',
+    resourceType: 'adjustment',
+    resourceId: 'ADJ-2024-012',
+    changeSummary: 'Auto-adjustment: SKU-001 +5 units (recount correction)',
+    origin: 'api',
+    before: { stock_quantity: 95 },
+    after: { stock_quantity: 100 }
+  },
+  {
+    id: 'AUD-011',
+    timestamp: '2026-06-06 15:00:00',
+    user: { id: 'admin', name: 'Admin', initials: 'AD', role: 'Admin' },
+    action: 'deleted',
+    resourceType: 'task',
+    resourceId: 'TASK-OLD-001',
+    changeSummary: 'Deleted task: Task Obsolete',
+    origin: 'web',
+    before: { title: 'Task Obsolete', status: 'Closed' },
+    after: null
+  },
+  {
+    id: 'AUD-012',
+    timestamp: '2026-06-06 12:30:00',
+    user: { id: 'operator3', name: 'Ahmad Wijaya', initials: 'AW', role: 'Operator' },
+    action: 'logout',
+    resourceType: 'user',
+    resourceId: 'operator3',
+    changeSummary: 'User logged out; session_duration: 8h 30m',
+    origin: 'mobile',
+    before: { session_active: true },
+    after: { session_active: false, session_duration: '8h 30m' }
+  }
+];
+
+let currentAuditView = 'table';
+let auditPage = 1;
+const AUDIT_PER_PAGE = 10;
+const AUDIT_TOTAL = mockAuditLogs.length;
+
+function loadAuditCenter() {
+  renderAuditTable();
+  renderAuditTimeline();
+  updateAuditStats();
+  renderAuditPagination();
+}
+
+function renderAuditTable(filteredLogs = mockAuditLogs) {
+  const auditTableBody = document.getElementById('auditTableBody');
+  const emptyState = document.getElementById('auditEmptyState');
+  const tableView = document.getElementById('auditTableView');
+  
+  if (!auditTableBody) return;
+
+  if (filteredLogs.length === 0) {
+    tableView.style.display = 'none';
+    emptyState.style.display = 'flex';
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  tableView.style.display = 'block';
+  emptyState.style.display = 'none';
+
+  // Paginate
+  const start = (auditPage - 1) * AUDIT_PER_PAGE;
+  const end = start + AUDIT_PER_PAGE;
+  const pageLogs = filteredLogs.slice(start, end);
+
+  auditTableBody.innerHTML = pageLogs.map(log => {
+    const actionInfo = AUDIT_ACTIONS[log.action] || AUDIT_ACTIONS.updated;
+    const originInfo = AUDIT_ORIGINS[log.origin] || AUDIT_ORIGINS.web;
+    
+    return `
+      <div class="audit-row" onclick="openAuditDetail('${log.id}')">
+        <div class="audit-timestamp">${log.timestamp}</div>
+        <div>
+          <div class="audit-user">
+            <div class="audit-user__avatar">${log.user.initials}</div>
+            <span class="audit-user__name">${log.user.name}</span>
+          </div>
+        </div>
+        <div>
+          <span class="audit-action-badge ${actionInfo.class}">${actionInfo.label}</span>
+        </div>
+        <div>
+          <div class="audit-resource">
+            <span class="audit-resource__type">${log.resourceType}</span>
+            <span class="audit-resource__id">${log.resourceId}</span>
+          </div>
+        </div>
+        <div class="audit-change">
+          <i data-lucide="git-compare" class="audit-change__icon"></i>
+          <span>${escapeHtml(log.changeSummary)}</span>
+        </div>
+        <div>
+          <span class="audit-origin">
+            <i data-lucide="${originInfo.icon}"></i>
+          </span>
+        </div>
+        <div>
+          <button type="button" class="audit-view-btn" onclick="event.stopPropagation(); openAuditDetail('${log.id}')">
+            <i data-lucide="eye"></i>
+            View
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Update showing info
+  const showingStart = start + 1;
+  const showingEnd = Math.min(end, filteredLogs.length);
+  document.getElementById('auditShowing').textContent = `Menampilkan ${showingStart}-${showingEnd} dari ${filteredLogs.length} entries`;
+
+  // Re-initialize Lucide icons
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
+function renderAuditTimeline(filteredLogs = mockAuditLogs) {
+  const auditTimelineBody = document.getElementById('auditTimelineBody');
+  
+  if (!auditTimelineBody) return;
+
+  const start = (auditPage - 1) * AUDIT_PER_PAGE;
+  const end = start + AUDIT_PER_PAGE;
+  const pageLogs = filteredLogs.slice(start, end);
+
+  auditTimelineBody.innerHTML = pageLogs.map(log => {
+    const actionInfo = AUDIT_ACTIONS[log.action] || AUDIT_ACTIONS.updated;
+    
+    return `
+      <div class="audit-timeline-item" onclick="openAuditDetail('${log.id}')">
+        <div class="audit-timeline-icon ${actionInfo.class.replace('audit-action-badge', 'audit-timeline-icon')}">
+          <i data-lucide="${actionInfo.icon}"></i>
+        </div>
+        <div class="audit-timeline-content">
+          <div class="audit-timeline-header">
+            <span class="audit-timeline-title">${escapeHtml(log.changeSummary)}</span>
+            <span class="audit-timeline-time">${log.timestamp}</span>
+          </div>
+          <div class="audit-timeline-meta">
+            <div class="audit-timeline-user">
+              <div class="audit-timeline-user__avatar">${log.user.initials}</div>
+              <span>${log.user.name}</span>
+              <span class="audit-action-badge ${actionInfo.class}">${actionInfo.label}</span>
+            </div>
+          </div>
+          <div class="audit-timeline-change">
+            ${log.resourceType}: ${log.resourceId}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Re-initialize Lucide icons
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
+function updateAuditStats() {
+  const stats = {
+    total: mockAuditLogs.length,
+    opname: mockAuditLogs.filter(l => l.resourceType === 'opname_session').length,
+    approval: mockAuditLogs.filter(l => l.resourceType === 'approval').length,
+    adjustment: mockAuditLogs.filter(l => l.resourceType === 'adjustment').length,
+    auth: mockAuditLogs.filter(l => l.action === 'login' || l.action === 'logout').length
+  };
+  
+  document.getElementById('auditCountTotal').textContent = stats.total;
+  document.getElementById('auditCountOpname').textContent = stats.opname;
+  document.getElementById('auditCountApproval').textContent = stats.approval;
+  document.getElementById('auditCountAdjustment').textContent = stats.adjustment;
+  document.getElementById('auditCountAuth').textContent = stats.auth;
+}
+
+function setAuditView(view) {
+  currentAuditView = view;
+  
+  const viewBtns = document.querySelectorAll('.audit-view-toggle .view-btn');
+  viewBtns.forEach(btn => btn.classList.remove('active'));
+  document.querySelector(`.audit-view-toggle .view-btn[onclick="setAuditView('${view}')"]`)?.classList.add('active');
+  
+  const tableView = document.getElementById('auditTableView');
+  const timelineView = document.getElementById('auditTimelineView');
+  
+  if (view === 'table') {
+    tableView.style.display = 'block';
+    timelineView.style.display = 'none';
+  } else {
+    tableView.style.display = 'none';
+    timelineView.style.display = 'block';
+  }
+}
+
+function filterAudit() {
+  const search = document.getElementById('auditSearch')?.value.toLowerCase() || '';
+  const actionFilter = document.getElementById('auditActionFilter')?.value || '';
+  const userFilter = document.getElementById('auditUserFilter')?.value || '';
+  const resourceFilter = document.getElementById('auditResourceFilter')?.value || '';
+  const dateFilter = document.getElementById('auditDateFilter')?.value || '';
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const monthAgo = new Date(today);
+  monthAgo.setDate(monthAgo.getDate() - 30);
+
+  const filtered = mockAuditLogs.filter(log => {
+    const matchesSearch = log.changeSummary.toLowerCase().includes(search) || 
+                          log.resourceId.toLowerCase().includes(search) ||
+                          log.id.toLowerCase().includes(search);
+    
+    const matchesAction = !actionFilter || log.action === actionFilter;
+    const matchesUser = !userFilter || log.user.id === userFilter;
+    const matchesResource = !resourceFilter || log.resourceType === resourceFilter;
+    
+    let matchesDate = true;
+    if (dateFilter) {
+      const logDate = new Date(log.timestamp);
+      if (dateFilter === 'today') {
+        matchesDate = logDate >= today;
+      } else if (dateFilter === 'yesterday') {
+        matchesDate = logDate >= yesterday && logDate < today;
+      } else if (dateFilter === 'week') {
+        matchesDate = logDate >= weekAgo;
+      } else if (dateFilter === 'month') {
+        matchesDate = logDate >= monthAgo;
+      }
+    }
+
+    return matchesSearch && matchesAction && matchesUser && matchesResource && matchesDate;
+  });
+
+  auditPage = 1;
+  renderAuditTable(filtered);
+  renderAuditTimeline(filtered);
+  renderAuditPagination(filtered.length);
+}
+
+function renderAuditPagination(totalItems = mockAuditLogs.length) {
+  const pageNumbers = document.getElementById('auditPageNumbers');
+  const totalPages = Math.ceil(totalItems / AUDIT_PER_PAGE);
+  
+  let html = '';
+  for (let i = 1; i <= totalPages; i++) {
+    html += `<button type="button" onclick="goToAuditPage(${i})" class="${i === auditPage ? 'active' : ''}">${i}</button>`;
+  }
+  pageNumbers.innerHTML = html;
+  
+  // Update prev/next buttons
+  document.getElementById('auditPrevBtn').disabled = auditPage === 1;
+  document.getElementById('auditNextBtn').disabled = auditPage === totalPages;
+}
+
+function goToAuditPage(page) {
+  auditPage = page;
+  renderAuditTable();
+  renderAuditTimeline();
+  renderAuditPagination();
+}
+
+function prevAuditPage() {
+  if (auditPage > 1) {
+    auditPage--;
+    renderAuditTable();
+    renderAuditTimeline();
+    renderAuditPagination();
+  }
+}
+
+function nextAuditPage() {
+  const totalPages = Math.ceil(mockAuditLogs.length / AUDIT_PER_PAGE);
+  if (auditPage < totalPages) {
+    auditPage++;
+    renderAuditTable();
+    renderAuditTimeline();
+    renderAuditPagination();
+  }
+}
+
+function openAuditDetail(auditId) {
+  const log = mockAuditLogs.find(a => a.id === auditId);
+  if (!log) return;
+  
+  const actionInfo = AUDIT_ACTIONS[log.action] || AUDIT_ACTIONS.updated;
+  showToast(`Viewing audit: ${log.id} - ${log.changeSummary.substring(0, 50)}...`, true);
+  // In a real app, this would open a detailed modal or drawer with before/after comparison
+}
+
+function exportAuditLog() {
+  showToast('Memulai export audit log...', true);
+  // In a real app, this would trigger a CSV/JSON/PDF export
+  setTimeout(() => {
+    showToast('Export selesai. File akan di-download.', true);
+  }, 1500);
 }

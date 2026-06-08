@@ -9,6 +9,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Audit Center
+- **New Audit Center Page** - Built comprehensive audit center following wireframe from `audit-workflow.md`
+  - Audit Center Header: Title, search bar, and export button
+  - Stats Cards: Total logs, opname, approval, adjustment, and auth event counts
+  - Filter Bar: Action, User, Resource, and Date range filters with view toggle
+  - Audit Table View: Full table with timestamp, user, action, resource, change summary, origin
+  - Audit Timeline View: Chronological feed with icons and change summaries
+  - Pagination: Previous/Next buttons with page numbers
+  - Export functionality for compliance reporting
+
+- **Audit Actions**
+  - Created (Green) - Resource creation events
+  - Updated (Blue) - Resource modification events
+  - Submitted (Purple) - Submission events
+  - Approved (Green) - Approval events
+  - Rejected (Red) - Rejection events
+  - Deleted (Red) - Deletion events
+  - Login/Logout (Gray) - Authentication events
+
+- **Audit Origins**
+  - Web UI - User actions via web interface
+  - API - Actions via API calls
+  - Mobile - Actions from mobile devices
+
+- **Audit Center Features** (per design spec)
+  - Immutable audit trail with before/after snapshots
+  - Filter by action type, user, resource, and date range
+  - Search across change summary and resource IDs
+  - Table and timeline view toggle
+  - Pagination for large datasets
+  - Export capability for compliance reports
+
+- **Audit Center Functions** - Added JavaScript functions for Audit Center interactions
+  - `loadAuditCenter()` - Initialize audit center on menu selection
+  - `renderAuditTable()` - Render audit log table with pagination
+  - `renderAuditTimeline()` - Render audit log timeline view
+  - `updateAuditStats()` - Update audit count statistics
+  - `setAuditView()` - Toggle between table and timeline views
+  - `filterAudit()` - Filter by search, action, user, resource, and date
+  - `renderAuditPagination()` - Render pagination controls
+  - `goToAuditPage()` / `prevAuditPage()` / `nextAuditPage()` - Navigation
+  - `openAuditDetail()` - Open detailed audit view
+  - `exportAuditLog()` - Export audit logs
+
 #### Activity Timeline
 - **New Activity Timeline Page** - Built comprehensive activity timeline following wireframe from `activity-timeline.md`
   - Activity Timeline Header: Title, search bar, and refresh button
@@ -213,7 +257,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Smooth transitions on all interactive elements
 
 ### Files Changed
-- `css/style.css` - Updated sidebar and header styles; Added admin, operator dashboard, Task Center, Approval Center, and Activity Timeline styles
-- `index.html` - Updated sidebar HTML structure; Added admin, operator dashboard, Task Center, Approval Center, and Activity Timeline sections; Updated auth state JavaScript
-- `js/dashboard.js` - Added admin, operator dashboard, Task Center, Approval Center, and Activity Timeline functions; Updated menu handling for role-based dashboard
+- `css/style.css` - Updated sidebar and header styles; Added admin, operator dashboard, Task Center, Approval Center, Activity Timeline, and Audit Center styles
+- `index.html` - Updated sidebar HTML structure; Added admin, operator dashboard, Task Center, Approval Center, Activity Timeline, and Audit Center sections; Updated auth state JavaScript
+- `js/dashboard.js` - Added admin, operator dashboard, Task Center, Approval Center, Activity Timeline, and Audit Center functions; Updated menu handling for role-based dashboard
 - `CHANGELOG.md` - Documented all changes

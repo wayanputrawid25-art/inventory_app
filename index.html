@@ -156,6 +156,10 @@
             <i data-lucide="activity"></i>
             <span>Activity Timeline</span>
           </li>
+          <li data-menu="audit" onclick="selectMenu(event,'audit')">
+            <i data-lucide="shield"></i>
+            <span>Audit Center</span>
+          </li>
         </ul>
       </div>
     </nav>
@@ -1810,6 +1814,154 @@
           <i data-lucide="activity"></i>
           <h3>Tidak ada aktivitas</h3>
           <p>Tidak ada aktivitas yang sesuai dengan filter yang dipilih.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Audit Center -->
+    <section id="auditTab" class="tab-content" style="display:none;">
+      <div class="audit-center">
+        <!-- Header -->
+        <div class="audit-header">
+          <div class="audit-header__left">
+            <p class="section-eyebrow">Compliance & Security</p>
+            <h2>Audit Center</h2>
+            <span class="page-caption">Lacak perubahan critical, approve actions, dan audit trails untuk compliance.</span>
+          </div>
+          <div class="audit-header__right">
+            <div class="audit-search">
+              <i data-lucide="search"></i>
+              <input type="text" id="auditSearch" placeholder="Cari audit log..." oninput="filterAudit()">
+            </div>
+            <button type="button" class="btn-secondary" onclick="exportAuditLog()">
+              <i data-lucide="download"></i>
+              Export
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="audit-stats">
+          <div class="audit-stat">
+            <span class="audit-stat__value" id="auditCountTotal">156</span>
+            <span class="audit-stat__label">Total Logs</span>
+          </div>
+          <div class="audit-stat stat-opname">
+            <span class="audit-stat__value" id="auditCountOpname">48</span>
+            <span class="audit-stat__label">Stok Opname</span>
+          </div>
+          <div class="audit-stat stat-approval">
+            <span class="audit-stat__value" id="auditCountApproval">32</span>
+            <span class="audit-stat__label">Approvals</span>
+          </div>
+          <div class="audit-stat stat-adjustment">
+            <span class="audit-stat__value" id="auditCountAdjustment">24</span>
+            <span class="audit-stat__label">Adjustments</span>
+          </div>
+          <div class="audit-stat stat-auth">
+            <span class="audit-stat__value" id="auditCountAuth">18</span>
+            <span class="audit-stat__label">Auth Events</span>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="audit-filters">
+          <div class="audit-filter-group">
+            <select id="auditActionFilter" onchange="filterAudit()">
+              <option value="">Semua Action</option>
+              <option value="created">Created</option>
+              <option value="updated">Updated</option>
+              <option value="submitted">Submitted</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="deleted">Deleted</option>
+              <option value="login">Login</option>
+              <option value="logout">Logout</option>
+            </select>
+            <select id="auditUserFilter" onchange="filterAudit()">
+              <option value="">Semua User</option>
+              <option value="admin">Admin</option>
+              <option value="operator1">Budi Santoso</option>
+              <option value="operator2">Siti Rahayu</option>
+              <option value="operator3">Ahmad Wijaya</option>
+              <option value="system">System</option>
+            </select>
+            <select id="auditResourceFilter" onchange="filterAudit()">
+              <option value="">Semua Resource</option>
+              <option value="opname_session">Opname Session</option>
+              <option value="task">Task</option>
+              <option value="approval">Approval</option>
+              <option value="item">Item</option>
+              <option value="user">User</option>
+            </select>
+            <select id="auditDateFilter" onchange="filterAudit()">
+              <option value="">Semua Waktu</option>
+              <option value="today">Hari Ini</option>
+              <option value="yesterday">Kemarin</option>
+              <option value="week">7 Hari Terakhir</option>
+              <option value="month">30 Hari Terakhir</option>
+            </select>
+          </div>
+          <div class="audit-view-toggle">
+            <button type="button" class="view-btn active" onclick="setAuditView('table')" title="Table View">
+              <i data-lucide="table"></i>
+            </button>
+            <button type="button" class="view-btn" onclick="setAuditView('timeline')" title="Timeline View">
+              <i data-lucide="list"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Audit Table View -->
+        <div id="auditTableView" class="audit-table-container">
+          <div class="audit-table">
+            <div class="audit-table-header">
+              <div class="audit-col audit-col-timestamp">Timestamp</div>
+              <div class="audit-col audit-col-user">User</div>
+              <div class="audit-col audit-col-action">Action</div>
+              <div class="audit-col audit-col-resource">Resource</div>
+              <div class="audit-col audit-col-change">Change Summary</div>
+              <div class="audit-col audit-col-origin">Origin</div>
+              <div class="audit-col audit-col-view">Detail</div>
+            </div>
+            <div id="auditTableBody" class="audit-table-body">
+              <!-- Audit rows will be populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Audit Timeline View -->
+        <div id="auditTimelineView" class="audit-timeline-container" style="display:none;">
+          <div id="auditTimelineBody">
+            <!-- Audit timeline items will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="audit-pagination">
+          <div class="audit-pagination__info">
+            <span id="auditShowing">Menampilkan 1-20 dari 156 entries</span>
+          </div>
+          <div class="audit-pagination__controls">
+            <button type="button" class="btn-secondary" id="auditPrevBtn" onclick="prevAuditPage()" disabled>
+              <i data-lucide="chevron-left"></i>
+              Previous
+            </button>
+            <div class="audit-page-numbers" id="auditPageNumbers">
+              <!-- Page numbers will be populated by JavaScript -->
+            </div>
+            <button type="button" class="btn-secondary" id="auditNextBtn" onclick="nextAuditPage()">
+              Next
+              <i data-lucide="chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="auditEmptyState" class="audit-empty" style="display:none;">
+          <i data-lucide="shield"></i>
+          <h3>Tidak ada audit log</h3>
+          <p>Tidak ada audit log yang sesuai dengan filter yang dipilih.</p>
         </div>
       </div>
     </section>
