@@ -209,6 +209,32 @@
       </div>
     </section>
 
+    <!-- Inventory quick menu -->
+    <div class="card" id="inventoryQuickMenu" style="margin-top:18px;">
+      <h3>Persediaan & Gudang</h3>
+      <div class="quick-menu-section">
+        <div class="quick-menu-grid">
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'permintaan')"><div class="icon-wrap"><i data-lucide="plus-square"></i></div><span>Permintaan Barang</span></button>
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'pemindahan')"><div class="icon-wrap"><i data-lucide="move"></i></div><span>Pemindahan Barang</span></button>
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'penyesuaian')"><div class="icon-wrap"><i data-lucide="sliders"></i></div><span>Penyesuaian Persediaan</span></button>
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'pemesanan')"><div class="icon-wrap"><i data-lucide="clipboard-list"></i></div><span>Pekerjaan Pesanan</span></button>
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'bahan-baku')"><div class="icon-wrap"><i data-lucide="package"></i></div><span>Penambahan Bahan Baku</span></button>
+
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'perintah-opname')"><div class="icon-wrap"><i data-lucide="clipboard-check"></i></div><span>Perintah Stok Opname</span></button>
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'hasil-opname')"><div class="icon-wrap"><i data-lucide="file-text"></i></div><span>Hasil Stok Opname</span></button>
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'barang-jasa')"><div class="icon-wrap"><i data-lucide="box"></i></div><span>Barang & Jasa</span></button>
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'gudang')"><div class="icon-wrap"><i data-lucide="home"></i></div><span>Gudang</span></button>
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'satuan')"><div class="icon-wrap"><i data-lucide="hash"></i></div><span>Satuan Barang</span></button>
+
+          <button class="quick-tile tile-orange" onclick="selectMenu(null,'kategori-barang')"><div class="icon-wrap"><i data-lucide="grid"></i></div><span>Kategori Barang</span></button>
+          <button class="quick-tile tile-orange" onclick="selectMenu(null,'merek')"><div class="icon-wrap"><i data-lucide="tag"></i></div><span>Merek Barang</span></button>
+          <button class="quick-tile tile-orange" onclick="selectMenu(null,'pemenuhan')"><div class="icon-wrap"><i data-lucide="truck"></i></div><span>Pemenuhan Pesanan</span></button>
+          <button class="quick-tile tile-orange" onclick="selectMenu(null,'per-gudang')"><div class="icon-wrap"><i data-lucide="warehouse"></i></div><span>Barang per Gudang</span></button>
+          <button class="quick-tile tile-purple" onclick="selectMenu(null,'stok-minimum')"><div class="icon-wrap"><i data-lucide="alert-triangle"></i></div><span>Barang Stok Minimum</span></button>
+        </div>
+      </div>
+    </div>
+
     <section id="chartTab" class="tab-content" style="display:none;">
       <div class="grid-2">
         <div class="card">
@@ -1160,6 +1186,28 @@
     document.addEventListener('DOMContentLoaded', () => {
       populateMockCharts();
     });
+  </script>
+  <script>
+    // Populate persediaan table with mock rows for preview
+    function populateMockPersediaan() {
+      const body = document.getElementById('persediaanBody');
+      if (!body) return;
+      const samples = [
+        ['SKU001','Modul A','Modul',120,50,80,0,150],
+        ['SKU002','Tas B','Tas',60,20,40,0,80],
+        ['SKU003','Seragam C','Seragam',20,0,15,0,5],
+        ['SKU004','Poster D','Poster',10,0,8,0,2],
+        ['SKU005','Buku E','Lain-lain',200,70,120,0,150]
+      ];
+      body.innerHTML = samples.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td>${r[7]}</td></tr>`).join('');
+
+      const restock = document.getElementById('persediaanRestockBody');
+      if (restock) {
+        restock.innerHTML = samples.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[7]}</td><td>${r[7] < 20 ? 'Perlu Restock' : 'Normal'}</td></tr>`).join('');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => populateMockPersediaan());
   </script>
 </body>
 </html>
