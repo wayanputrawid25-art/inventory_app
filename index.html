@@ -101,11 +101,6 @@
       </div>
     </div>
   </section>
-  <button type="button" class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Buka menu">
-    <i data-lucide="menu"></i>
-  </button>
-  <div class="mobile-menu-backdrop" onclick="closeMobileMenu()"></div>
-
   <aside class="sidebar">
     <div class="sidebar-brand">
       <div class="sidebar-brand__logo">
@@ -118,36 +113,30 @@
     </div>
 
     <nav class="sidebar-nav">
+      <!-- Dashboard - Available to all roles -->
       <div class="sidebar-section">
-        <p class="sidebar-section__label">Menu Utama</p>
+        <p class="sidebar-section__label">Dashboard</p>
         <ul>
           <li data-menu="dashboard" onclick="selectMenu(event,'dashboard')" class="active">
             <i data-lucide="layout-dashboard"></i>
             <span>Dashboard</span>
-          </li>
-          <li data-menu="admin" onclick="selectMenu(event,'admin')" id="adminMenuItem" class="admin-only" style="display:none;">
-            <i data-lucide="shield-check"></i>
-            <span>Admin Panel</span>
           </li>
         </ul>
       </div>
 
       <div class="sidebar-divider"></div>
 
+      <!-- Operasional - Daily operations -->
       <div class="sidebar-section">
         <p class="sidebar-section__label">Operasional</p>
         <ul>
-          <li data-menu="persediaan" onclick="selectMenu(event,'persediaan')">
-            <i data-lucide="boxes"></i>
-            <span>Persediaan</span>
-          </li>
-          <li data-menu="forecast" onclick="selectMenu(event,'forecast')">
-            <i data-lucide="trending-up"></i>
-            <span>Forecasting</span>
-          </li>
           <li data-menu="opname" onclick="selectMenu(event,'opname')">
             <i data-lucide="package-check"></i>
             <span>Stok Opname</span>
+          </li>
+          <li data-menu="persediaan" onclick="selectMenu(event,'persediaan')">
+            <i data-lucide="boxes"></i>
+            <span>Persediaan</span>
           </li>
           <li data-menu="taskcenter" onclick="selectMenu(event,'taskcenter')">
             <i data-lucide="clipboard-check"></i>
@@ -157,17 +146,54 @@
             <i data-lucide="check-square"></i>
             <span>Approval Center</span>
           </li>
+        </ul>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <!-- Analitik - Reports and analysis -->
+      <div class="sidebar-section">
+        <p class="sidebar-section__label">Analitik</p>
+        <ul>
+          <li data-menu="penjualan" onclick="selectMenu(event,'penjualan')">
+            <i data-lucide="bar-chart-3"></i>
+            <span>Penjualan</span>
+          </li>
+          <li data-menu="forecast" onclick="selectMenu(event,'forecast')">
+            <i data-lucide="trending-up"></i>
+            <span>Forecasting</span>
+          </li>
           <li data-menu="activity" onclick="selectMenu(event,'activity')">
             <i data-lucide="activity"></i>
             <span>Activity Timeline</span>
           </li>
-          <li data-menu="audit" onclick="selectMenu(event,'audit')">
+        </ul>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <!-- Master Data - Admin only -->
+      <div class="sidebar-section">
+        <p class="sidebar-section__label">Master Data</p>
+        <ul>
+          <li data-menu="audit" onclick="selectMenu(event,'audit')" id="auditMenuItem">
             <i data-lucide="shield"></i>
             <span>Audit Center</span>
           </li>
           <li data-menu="reports" onclick="selectMenu(event,'reports')">
             <i data-lucide="file-bar-chart"></i>
             <span>Laporan</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Sistem - Admin only -->
+      <div class="sidebar-section" id="sistemSection" style="display:none;">
+        <p class="sidebar-section__label">Sistem</p>
+        <ul>
+          <li data-menu="admin" onclick="selectMenu(event,'admin')" id="adminMenuItem">
+            <i data-lucide="shield-check"></i>
+            <span>Admin Panel</span>
           </li>
         </ul>
       </div>
@@ -2173,7 +2199,7 @@
     <div class="credit">Design & UI enhancements: Mr.Wid</div>
   </footer>
 
-  <!-- Mobile Bottom Navigation -->
+  <!-- Mobile Bottom Navigation - 5 core actions -->
   <nav class="mobile-bottom-nav" id="mobileBottomNav">
     <button type="button" class="mobile-nav-item" onclick="selectMenu(event,'dashboard')" data-nav="dashboard">
       <i data-lucide="layout-dashboard"></i>
@@ -2184,57 +2210,111 @@
       <span>Stok</span>
     </button>
     <button type="button" class="mobile-nav-item mobile-nav-item--primary" onclick="selectMenu(event,'opname')" data-nav="opname">
-      <i data-lucide="clipboard-check"></i>
-      <span>Opname</span>
+      <i data-lucide="scan-line"></i>
+      <span>Scan</span>
     </button>
     <button type="button" class="mobile-nav-item" onclick="selectMenu(event,'taskcenter')" data-nav="taskcenter">
-      <i data-lucide="list-todo"></i>
+      <i data-lucide="clipboard-check"></i>
       <span>Task</span>
     </button>
-    <button type="button" class="mobile-nav-item" onclick="toggleMobileMenu()" data-nav="more">
-      <i data-lucide="menu"></i>
-      <span>More</span>
+    <button type="button" class="mobile-nav-item" onclick="toggleMobileMenu()" data-nav="account">
+      <i data-lucide="user-circle"></i>
+      <span>Akun</span>
     </button>
   </nav>
 
-  <!-- Mobile Menu Overlay -->
+  <!-- Mobile Menu Overlay - Full navigation panel -->
   <div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="toggleMobileMenu()">
     <div class="mobile-menu-panel" onclick="event.stopPropagation()">
       <div class="mobile-menu-panel__header">
-        <h3>Menu</h3>
+        <div class="mobile-menu-panel__user">
+          <div class="mobile-menu-panel__avatar" id="mobileUserAvatar"></div>
+          <div class="mobile-menu-panel__user-info">
+            <span class="mobile-menu-panel__user-name" id="mobileUserName">Guest</span>
+            <span class="mobile-menu-panel__user-role" id="mobileUserRole">-</span>
+          </div>
+        </div>
         <button type="button" class="mobile-menu-panel__close" onclick="toggleMobileMenu()">
           <i data-lucide="x"></i>
         </button>
       </div>
       <div class="mobile-menu-panel__content">
-        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'admin')">
-          <i data-lucide="settings"></i>
-          <span>Admin Panel</span>
-        </button>
-        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'penjualan')">
-          <i data-lucide="shopping-cart"></i>
-          <span>Penjualan</span>
-        </button>
-        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'forecast')">
-          <i data-lucide="trending-up"></i>
-          <span>Forecast</span>
-        </button>
-        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'approvalcenter')">
-          <i data-lucide="check-square"></i>
-          <span>Approval Center</span>
-        </button>
-        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'activity')">
-          <i data-lucide="activity"></i>
-          <span>Activity Timeline</span>
-        </button>
-        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'audit')">
-          <i data-lucide="shield"></i>
-          <span>Audit Center</span>
-        </button>
-        <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'reports')">
-          <i data-lucide="file-bar-chart"></i>
-          <span>Laporan</span>
-        </button>
+        <!-- Dashboard Section -->
+        <div class="mobile-menu-section">
+          <p class="mobile-menu-section__label">Dashboard</p>
+          <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'dashboard')" data-menu-target="dashboard">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Dashboard</span>
+          </button>
+        </div>
+        
+        <!-- Operasional Section -->
+        <div class="mobile-menu-section">
+          <p class="mobile-menu-section__label">Operasional</p>
+          <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'opname')" data-menu-target="opname">
+            <i data-lucide="package-check"></i>
+            <span>Stok Opname</span>
+          </button>
+          <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'persediaan')" data-menu-target="persediaan">
+            <i data-lucide="boxes"></i>
+            <span>Persediaan</span>
+          </button>
+          <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'taskcenter')" data-menu-target="taskcenter">
+            <i data-lucide="clipboard-check"></i>
+            <span>Task Center</span>
+          </button>
+          <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'approvalcenter')" data-menu-target="approvalcenter">
+            <i data-lucide="check-square"></i>
+            <span>Approval Center</span>
+          </button>
+        </div>
+        
+        <!-- Analitik Section -->
+        <div class="mobile-menu-section">
+          <p class="mobile-menu-section__label">Analitik</p>
+          <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'penjualan')" data-menu-target="penjualan">
+            <i data-lucide="bar-chart-3"></i>
+            <span>Penjualan</span>
+          </button>
+          <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'forecast')" data-menu-target="forecast">
+            <i data-lucide="trending-up"></i>
+            <span>Forecasting</span>
+          </button>
+          <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'activity')" data-menu-target="activity">
+            <i data-lucide="activity"></i>
+            <span>Activity Timeline</span>
+          </button>
+        </div>
+        
+        <!-- Master Data Section -->
+        <div class="mobile-menu-section">
+          <p class="mobile-menu-section__label">Master Data</p>
+          <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'audit')" data-menu-target="audit">
+            <i data-lucide="shield"></i>
+            <span>Audit Center</span>
+          </button>
+          <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'reports')" data-menu-target="reports">
+            <i data-lucide="file-bar-chart"></i>
+            <span>Laporan</span>
+          </button>
+        </div>
+        
+        <!-- Sistem Section (Admin only) -->
+        <div class="mobile-menu-section" id="mobileSistemSection" style="display:none;">
+          <p class="mobile-menu-section__label">Sistem</p>
+          <button type="button" class="mobile-menu-item" onclick="selectMenu(event,'admin')" data-menu-target="admin">
+            <i data-lucide="shield-check"></i>
+            <span>Admin Panel</span>
+          </button>
+        </div>
+        
+        <!-- Logout -->
+        <div class="mobile-menu-section mobile-menu-section--footer">
+          <button type="button" class="mobile-menu-item mobile-menu-item--logout" onclick="performLogout()">
+            <i data-lucide="log-out"></i>
+            <span>Keluar</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -2348,9 +2428,40 @@
 
     function applyAuthState() {
       const hasAuth = Boolean(getStoredAuth()?.access_token);
+      const userRole = getStoredAuth()?.role || null;
+      const isAdmin = userRole === 'admin';
+      
       document.body.classList.toggle('auth-locked', !hasAuth);
       document.getElementById('loginModal')?.removeAttribute('style');
       updateAuthHeader();
+      
+      // Update sidebar sections based on role
+      const sistemSection = document.getElementById('sistemSection');
+      if (sistemSection) {
+        sistemSection.style.display = isAdmin ? 'block' : 'none';
+      }
+      
+      // Update mobile menu sistem section
+      const mobileSistemSection = document.getElementById('mobileSistemSection');
+      if (mobileSistemSection) {
+        mobileSistemSection.style.display = isAdmin ? 'block' : 'none';
+      }
+      
+      // Update mobile user info
+      const mobileUserAvatar = document.getElementById('mobileUserAvatar');
+      const mobileUserName = document.getElementById('mobileUserName');
+      const mobileUserRole = document.getElementById('mobileUserRole');
+      
+      if (mobileUserAvatar) {
+        mobileUserAvatar.textContent = userRole ? userRole.charAt(0).toUpperCase() : '?';
+      }
+      if (mobileUserName) {
+        mobileUserName.textContent = getStoredAuth()?.username || 'Guest';
+      }
+      if (mobileUserRole) {
+        mobileUserRole.textContent = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : '-';
+      }
+      
       if (!hasAuth) {
         setLoginMode(loginMode);
         setTimeout(() => document.getElementById('loginUsername')?.focus(), 50);
@@ -2426,143 +2537,18 @@
 
     applyAuthState();
   </script>
+  <!-- 
+    Data Validation: All dashboard data is now fetched from real database APIs.
+    No mock data or dummy content is rendered. Charts and KPIs are populated
+    only after successful API responses from /api/kpi, /api/chart, etc.
+  -->
   <script>
-    // Populate mock KPI data for local preview when backend not available
-    function populateMockKPI() {
-      const hasUser = !!window.localStorage.getItem('auth_user');
-      if (!hasUser) return;
-
-      const mapping = {
-        kpi_qty: 12450,
-        kpi_nilai: 'Rp 2.361.824.148',
-        kpi_produk: 872,
-        kpi_produk_belum: 145,
-        kpi_outlet: 342,
-        kpi_outlet_belum: 12,
-        kpi_modal: 'Rp 1.050.000.000',
-        kpi_profit: 'Rp 1.311.824.148'
-      };
-
-      Object.keys(mapping).forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = mapping[id];
-      });
-    }
-
+    // Re-initialize Lucide icons after all content loads
     document.addEventListener('DOMContentLoaded', () => {
-      try {
-        populateMockKPI();
+      if (window.lucide) {
         lucide.createIcons();
-      } catch (e) { console.error(e); }
-    });
-  </script>
-  <script>
-    // Render mock charts when backend not available
-    function populateMockCharts() {
-      if (!window.Chart) return;
-      try {
-        // Annual sales chart
-        const ctx = document.getElementById('chart');
-        if (ctx) {
-          new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-              datasets: [{
-                label: 'Penjualan (Rp)',
-                data: [120,150,180,170,200,240,230,260,300,320,310,350].map(v=>v*1000000),
-                borderColor: 'rgba(255,99,71,0.9)',
-                backgroundColor: 'rgba(255,99,71,0.12)',
-                tension: 0.3,
-                fill: true
-              }]
-            },
-            options: { responsive:true, maintainAspectRatio:false }
-          });
-        }
-
-        // Top produk bar
-        const ctx2 = document.getElementById('chartTopProduk');
-        if (ctx2) {
-          new Chart(ctx2, {
-            type: 'bar',
-            data: {
-              labels: ['Modul A','Tas B','Seragam C','Poster D','Lainnya'],
-              datasets:[{data:[190,78,5,12,9], backgroundColor:['#10b981','#3b82f6','#f97316','#a78bfa','#f59e0b']}]
-            },
-            options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
-          });
-        }
-
-        // Top outlet pie
-        const ctx3 = document.getElementById('chartTopOutlet');
-        if (ctx3) {
-          new Chart(ctx3, {
-            type: 'doughnut',
-            data: { labels:['Jakarta','Bandung','Surabaya','Medan','Makassar'], datasets:[{data:[35,20,18,15,12], backgroundColor:['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6']}] },
-            options:{ responsive:true, maintainAspectRatio:false }
-          });
-        }
-
-        // Outlet status horizontal bar
-        const ctx4 = document.getElementById('chartOutletStatus');
-        if (ctx4) {
-          new Chart(ctx4, { type:'bar', data:{ labels:['Sudah','Belum'], datasets:[{data:[78,22], backgroundColor:['#10b981','#ef4444']}] }, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} } });
-        }
-      } catch(e){ console.error('Chart init error',e); }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.localStorage.getItem('auth_user')) populateMockCharts();
-    });
-  </script>
-  <script>
-    // Populate persediaan table with mock rows for preview
-    function populateMockPersediaan() {
-      const body = document.getElementById('persediaanBody');
-      if (!body) return;
-      const samples = [
-        ['SKU001','Modul A','Modul',120,50,80,0,150],
-        ['SKU002','Tas B','Tas',60,20,40,0,80],
-        ['SKU003','Seragam C','Seragam',20,0,15,0,5],
-        ['SKU004','Poster D','Poster',10,0,8,0,2],
-        ['SKU005','Buku E','Lain-lain',200,70,120,0,150]
-      ];
-      body.innerHTML = samples.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td>${r[7]}</td></tr>`).join('');
-
-      const restock = document.getElementById('persediaanRestockBody');
-      if (restock) {
-        restock.innerHTML = samples.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[7]}</td><td>${r[7] < 20 ? 'Perlu Restock' : 'Normal'}</td></tr>`).join('');
       }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => { if (window.localStorage.getItem('auth_user')) populateMockPersediaan(); });
-  </script>
-  <script>
-    // Populate outlet and top-produk tables for richer preview
-    function populateMockOutlet() {
-      const outBody = document.getElementById('outletBody');
-      if (!outBody) return;
-      const rows = [
-        ['OUT001','Outlet Jakarta','Jakarta',1200,'Aktif'],
-        ['OUT002','Outlet Bandung','Bandung',780,'Aktif'],
-        ['OUT003','Outlet Surabaya','Surabaya',540,'Nonaktif']
-      ];
-      outBody.innerHTML = rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`).join('');
-    }
-
-    function populateMockTopProduk() {
-      const topBody = document.getElementById('topProdukBody');
-      if (!topBody) return;
-      const items = [
-        ['PRD001','Modul A',540,1200000],
-        ['PRD002','Tas B',430,860000],
-        ['PRD003','Seragam C',320,640000]
-      ];
-      topBody.innerHTML = items.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('');
-    }
-
-    document.addEventListener('DOMContentLoaded', () => { if (window.localStorage.getItem('auth_user')) { populateMockOutlet(); populateMockTopProduk(); } });
+    });
   </script>
 </body>
 </html>

@@ -9,6 +9,93 @@ const VALID_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast"
 const USER_ONLY_MENUS = ["opname"];
 const ADMIN_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter", "activity", "audit", "reports"];
 let isMobileMenuOpen = false;
+
+// Chart management - prevent memory leaks
+const chartManager = {
+  caches: {},
+  
+  // Safely destroy existing chart
+  destroyChart(chartInstance) {
+    if (chartInstance && typeof chartInstance.destroy === 'function') {
+      try {
+        chartInstance.destroy();
+      } catch (e) {
+        console.warn('Chart destroy error:', e);
+      }
+    }
+    return null;
+  },
+  
+  // Destroy all charts to prevent memory leaks
+  destroyAllCharts() {
+    chart = this.destroyChart(chart);
+    chartTopProduk = this.destroyChart(chartTopProduk);
+    chartOutletStatus = this.destroyChart(chartOutletStatus);
+    chartTopOutlet = this.destroyChart(chartTopOutlet);
+    this.caches = {};
+  },
+  
+  // Safe chart creation with destroy protection
+  createChart(canvasId, config, cacheKey) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) {
+      console.warn(`Canvas #${canvasId} not found`);
+      return null;
+    }
+    
+    // Check cache to prevent unnecessary re-renders
+    const cache = this.caches[cacheKey];
+    if (cache && cache.config && JSON.stringify(cache.config) === JSON.stringify(config)) {
+      return cache.instance;
+    }
+    
+    // Destroy existing chart on same canvas
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) {
+      try {
+        existingChart.destroy();
+      } catch (e) {
+        console.warn('Existing chart destroy error:', e);
+      }
+    }
+    
+    try {
+      const instance = new Chart(canvas, config);
+      this.caches[cacheKey] = { instance, config };
+      return instance;
+    } catch (e) {
+      console.error('Chart creation error:', e);
+      return null;
+    }
+  },
+  
+  // Check if chart data changed (for re-render decision)
+  shouldUpdate(cacheKey, newData) {
+    const cache = this.caches[cacheKey];
+    if (!cache) return true;
+    return JSON.stringify(cache.data) !== JSON.stringify(newData);
+  },
+  
+  // Update chart with new data
+  updateChartData(canvasId, cacheKey, newConfig, newData) {
+    if (!this.shouldUpdate(cacheKey, newData)) return this.caches[cacheKey]?.instance;
+    
+    this.destroyAllCharts();
+    return this.createChart(canvasId, newConfig, cacheKey);
+  }
+};
+
+// Cleanup charts on page unload to prevent memory leaks
+window.addEventListener('beforeunload', () => chartManager.destroyAllCharts());
+window.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // Optionally pause chart animations when tab is hidden
+    [chart, chartTopProduk, chartTopOutlet, chartOutletStatus].forEach(c => {
+      if (c?.stop) c.stop();
+    });
+  }
+});
+
 const state = {
   produkOptions: [],
   auditOutlets: [],
@@ -1075,113 +1162,193 @@ async function loadKPI() {
 }
 
 async function loadChart() {
-  const data = toArray(await fetchJson(`/api/chart?${new URLSearchParams({
-    tahun: getTahun(),
-    ...(getSelectedSku() ? { sku: getSelectedSku() } : {})
-  }).toString()}`));
-
-  const labels = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-  const values = new Array(12).fill(0);
-  data.forEach(item => {
-    values[Number(item.bulan) - 1] = Number(item.total || 0);
-  });
-
+  // Check if canvas exists before fetching data
   const ctx = document.getElementById("chart");
   if (!ctx) return;
-  if (chart instanceof Chart) chart.destroy();
+  
+  try {
+    const data = toArray(await fetchJson(`/api/chart?${new URLSearchParams({
+      tahun: getTahun(),
+      ...(getSelectedSku() ? { sku: getSelectedSku() } : {})
+    }).toString()}`));
 
-  chart = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [{
-        label: "Penjualan Bulanan",
-        data: values,
-        borderColor: "#b85c38",
-        backgroundColor: "rgba(184, 92, 56, 0.12)",
-        tension: 0.35,
-        borderWidth: 3,
-        fill: true,
-        pointRadius: 4,
-        pointBackgroundColor: "#b85c38"
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false }
-      }
+    const labels = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const values = new Array(12).fill(0);
+    data.forEach(item => {
+      values[Number(item.bulan) - 1] = Number(item.total || 0);
+    });
+
+    // Check if data changed to avoid unnecessary re-renders
+    const cacheKey = 'chart-sales';
+    const newData = { labels, values };
+    
+    if (!chartManager.shouldUpdate(cacheKey, newData) && chart) {
+      return; // No update needed
     }
-  });
+
+    // Destroy existing chart before creating new one
+    chart = chartManager.destroyChart(chart);
+
+    const config = {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "Penjualan Bulanan",
+          data: values,
+          borderColor: "#b85c38",
+          backgroundColor: "rgba(184, 92, 56, 0.12)",
+          tension: 0.35,
+          borderWidth: 3,
+          fill: true,
+          pointRadius: 4,
+          pointBackgroundColor: "#b85c38"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 600 },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    };
+
+    chart = chartManager.createChart("chart", config, cacheKey);
+    if (chart) chartManager.caches[cacheKey].data = newData;
+  } catch (error) {
+    console.error('Error loading sales chart:', error);
+  }
 }
 
 async function loadTopProduk() {
-  const data = toArray(await fetchJson(`/api/top-produk?${getQueryParams().toString()}`));
   const ctx = document.getElementById("chartTopProduk");
   if (!ctx) return;
-  if (chartTopProduk instanceof Chart) chartTopProduk.destroy();
-
-  chartTopProduk = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: data.map(item => item.nama_produk),
-      datasets: [{
-        label: "Qty",
-        data: data.map(item => Number(item.total || 0)),
-        backgroundColor: "#d8a25e"
-      }]
-    },
-    options: {
-      indexAxis: "y",
-      responsive: true,
-      plugins: { legend: { display: false } }
+  
+  try {
+    const data = toArray(await fetchJson(`/api/top-produk?${getQueryParams().toString()}`));
+    
+    // Check if data changed
+    const cacheKey = 'chart-topProduk';
+    const newData = data.map(item => item.nama_produk);
+    
+    if (!chartManager.shouldUpdate(cacheKey, newData) && chartTopProduk) {
+      return;
     }
-  });
+
+    // Destroy existing chart
+    chartTopProduk = chartManager.destroyChart(chartTopProduk);
+
+    const config = {
+      type: "bar",
+      data: {
+        labels: data.map(item => item.nama_produk),
+        datasets: [{
+          label: "Qty",
+          data: data.map(item => Number(item.total || 0)),
+          backgroundColor: "#d8a25e"
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 600 },
+        plugins: { legend: { display: false } }
+      }
+    };
+
+    chartTopProduk = chartManager.createChart("chartTopProduk", config, cacheKey);
+    if (chartTopProduk) chartManager.caches[cacheKey].data = newData;
+  } catch (error) {
+    console.error('Error loading top produk chart:', error);
+  }
 }
 
 async function loadTopOutlet() {
-  const data = toArray(await fetchJson(`/api/top-outlet?${getQueryParams().toString()}`));
   const ctx = document.getElementById("chartTopOutlet");
   if (!ctx) return;
-  if (chartTopOutlet instanceof Chart) chartTopOutlet.destroy();
-
-  chartTopOutlet = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: data.map(item => item.nama_outlet),
-      datasets: [{
-        label: "Qty",
-        data: data.map(item => Number(item.total || 0)),
-        backgroundColor: "#257a56"
-      }]
-    },
-    options: {
-      indexAxis: "y",
-      responsive: true,
-      plugins: { legend: { display: false } }
+  
+  try {
+    const data = toArray(await fetchJson(`/api/top-outlet?${getQueryParams().toString()}`));
+    
+    // Check if data changed
+    const cacheKey = 'chart-topOutlet';
+    const newData = data.map(item => item.nama_outlet);
+    
+    if (!chartManager.shouldUpdate(cacheKey, newData) && chartTopOutlet) {
+      return;
     }
-  });
+
+    // Destroy existing chart
+    chartTopOutlet = chartManager.destroyChart(chartTopOutlet);
+
+    const config = {
+      type: "bar",
+      data: {
+        labels: data.map(item => item.nama_outlet),
+        datasets: [{
+          label: "Qty",
+          data: data.map(item => Number(item.total || 0)),
+          backgroundColor: "#257a56"
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 600 },
+        plugins: { legend: { display: false } }
+      }
+    };
+
+    chartTopOutlet = chartManager.createChart("chartTopOutlet", config, cacheKey);
+    if (chartTopOutlet) chartManager.caches[cacheKey].data = newData;
+  } catch (error) {
+    console.error('Error loading top outlet chart:', error);
+  }
 }
 
 async function loadOutletStatus() {
-  const data = toObject(await fetchJson(`/api/outlet-status?${getQueryParams().toString()}`));
   const ctx = document.getElementById("chartOutletStatus");
   if (!ctx) return;
-  if (chartOutletStatus instanceof Chart) chartOutletStatus.destroy();
-
-  chartOutletStatus = new Chart(ctx, {
-    type: "doughnut",
-    data: {
-      labels: ["Transaksi", "Tidak Transaksi"],
-      datasets: [{
-        data: [Number(data.transaksi || 0), Number(data.tidak || 0)],
-        backgroundColor: ["#257a56", "#b14141"]
-      }]
-    },
-    options: {
-      responsive: true
+  
+  try {
+    const data = toObject(await fetchJson(`/api/outlet-status?${getQueryParams().toString()}`));
+    
+    // Check if data changed
+    const cacheKey = 'chart-outletStatus';
+    const newData = [data.transaksi, data.tidak];
+    
+    if (!chartManager.shouldUpdate(cacheKey, newData) && chartOutletStatus) {
+      return;
     }
-  });
+
+    // Destroy existing chart
+    chartOutletStatus = chartManager.destroyChart(chartOutletStatus);
+
+    const config = {
+      type: "doughnut",
+      data: {
+        labels: ["Transaksi", "Tidak Transaksi"],
+        datasets: [{
+          data: [Number(data.transaksi || 0), Number(data.tidak || 0)],
+          backgroundColor: ["#257a56", "#b14141"]
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 600 }
+      }
+    };
+
+    chartOutletStatus = chartManager.createChart("chartOutletStatus", config, cacheKey);
+    if (chartOutletStatus) chartManager.caches[cacheKey].data = newData;
+  } catch (error) {
+    console.error('Error loading outlet status chart:', error);
+  }
 }
 
 function buildForm(type, prefix) {
