@@ -160,6 +160,10 @@
             <i data-lucide="shield"></i>
             <span>Audit Center</span>
           </li>
+          <li data-menu="reports" onclick="selectMenu(event,'reports')">
+            <i data-lucide="file-bar-chart"></i>
+            <span>Laporan</span>
+          </li>
         </ul>
       </div>
     </nav>
@@ -1962,6 +1966,196 @@
           <i data-lucide="shield"></i>
           <h3>Tidak ada audit log</h3>
           <p>Tidak ada audit log yang sesuai dengan filter yang dipilih.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reports -->
+    <section id="reportsTab" class="tab-content" style="display:none;">
+      <div class="reports-page">
+        <!-- Header -->
+        <div class="reports-header">
+          <div class="reports-header__left">
+            <p class="section-eyebrow">Analytics & Reports</p>
+            <h2>Laporan</h2>
+            <span class="page-caption">Generate dan download laporan inventory, penjualan, dan aktivitas.</span>
+          </div>
+          <div class="reports-header__right">
+            <button type="button" class="btn-secondary" onclick="refreshReports()">
+              <i data-lucide="refresh-cw"></i>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="reports-stats">
+          <div class="report-stat-card">
+            <div class="report-stat-card__icon">
+              <i data-lucide="package"></i>
+            </div>
+            <div class="report-stat-card__content">
+              <span class="report-stat-card__value">1,284</span>
+              <span class="report-stat-card__label">Total SKU</span>
+            </div>
+          </div>
+          <div class="report-stat-card">
+            <div class="report-stat-card__icon stat-warning">
+              <i data-lucide="alert-triangle"></i>
+            </div>
+            <div class="report-stat-card__content">
+              <span class="report-stat-card__value">23</span>
+              <span class="report-stat-card__label">Low Stock Items</span>
+            </div>
+          </div>
+          <div class="report-stat-card">
+            <div class="report-stat-card__icon stat-danger">
+              <i data-lucide="x-circle"></i>
+            </div>
+            <div class="report-stat-card__content">
+              <span class="report-stat-card__value">8</span>
+              <span class="report-stat-card__label">Out of Stock</span>
+            </div>
+          </div>
+          <div class="report-stat-card">
+            <div class="report-stat-card__icon stat-success">
+              <i data-lucide="trending-up"></i>
+            </div>
+            <div class="report-stat-card__content">
+              <span class="report-stat-card__value">156</span>
+              <span class="report-stat-card__label">Discrepancy Found</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Report Categories -->
+        <div class="report-categories">
+          <div class="report-category-card" onclick="openReportGenerator('inventory')">
+            <div class="report-category-card__icon">
+              <i data-lucide="boxes"></i>
+            </div>
+            <div class="report-category-card__content">
+              <h3>Laporan Inventory</h3>
+              <p>Stok gudang, movements, dan valuation report.</p>
+            </div>
+            <div class="report-category-card__arrow">
+              <i data-lucide="chevron-right"></i>
+            </div>
+          </div>
+          <div class="report-category-card" onclick="openReportGenerator('sales')">
+            <div class="report-category-card__icon stat-success">
+              <i data-lucide="shopping-cart"></i>
+            </div>
+            <div class="report-category-card__content">
+              <h3>Laporan Penjualan</h3>
+              <p>Sales performance, outlet breakdown, dan trend.</p>
+            </div>
+            <div class="report-category-card__arrow">
+              <i data-lucide="chevron-right"></i>
+            </div>
+          </div>
+          <div class="report-category-card" onclick="openReportGenerator('opname')">
+            <div class="report-category-card__icon stat-info">
+              <i data-lucide="package-check"></i>
+            </div>
+            <div class="report-category-card__content">
+              <h3>Laporan Stok Opname</h3>
+              <p>Opname results, discrepancies, dan variance analysis.</p>
+            </div>
+            <div class="report-category-card__arrow">
+              <i data-lucide="chevron-right"></i>
+            </div>
+          </div>
+          <div class="report-category-card" onclick="openReportGenerator('audit')">
+            <div class="report-category-card__icon stat-muted">
+              <i data-lucide="shield"></i>
+            </div>
+            <div class="report-category-card__content">
+              <h3>Laporan Audit</h3>
+              <p>Audit trails, user activities, dan compliance reports.</p>
+            </div>
+            <div class="report-category-card__arrow">
+              <i data-lucide="chevron-right"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Reports -->
+        <div class="recent-reports">
+          <div class="recent-reports__header">
+            <h3>Laporan Terbaru</h3>
+            <a href="#" class="recent-reports__view-all" onclick="event.preventDefault();">Lihat Semua</a>
+          </div>
+          <div class="recent-reports__list">
+            <div class="recent-report-item">
+              <div class="recent-report-item__icon">
+                <i data-lucide="file-spreadsheet"></i>
+              </div>
+              <div class="recent-report-item__info">
+                <span class="recent-report-item__name">Laporan Stok Gudang Utama - Juni 2026</span>
+                <span class="recent-report-item__meta">Generated 2 jam lalu oleh Admin</span>
+              </div>
+              <div class="recent-report-item__actions">
+                <button type="button" class="report-action-btn" title="Download">
+                  <i data-lucide="download"></i>
+                </button>
+                <button type="button" class="report-action-btn" title="View">
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+            </div>
+            <div class="recent-report-item">
+              <div class="recent-report-item__icon stat-success">
+                <i data-lucide="file-bar-chart"></i>
+              </div>
+              <div class="recent-report-item__info">
+                <span class="recent-report-item__name">Sales Performance Mei 2026</span>
+                <span class="recent-report-item__meta">Generated 1 hari lalu oleh Admin</span>
+              </div>
+              <div class="recent-report-item__actions">
+                <button type="button" class="report-action-btn" title="Download">
+                  <i data-lucide="download"></i>
+                </button>
+                <button type="button" class="report-action-btn" title="View">
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+            </div>
+            <div class="recent-report-item">
+              <div class="recent-report-item__icon stat-info">
+                <i data-lucide="file-text"></i>
+              </div>
+              <div class="recent-report-item__info">
+                <span class="recent-report-item__name">Opname Variance Report - Mei 2026</span>
+                <span class="recent-report-item__meta">Generated 3 hari lalu oleh Admin</span>
+              </div>
+              <div class="recent-report-item__actions">
+                <button type="button" class="report-action-btn" title="Download">
+                  <i data-lucide="download"></i>
+                </button>
+                <button type="button" class="report-action-btn" title="View">
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+            </div>
+            <div class="recent-report-item">
+              <div class="recent-report-item__icon stat-muted">
+                <i data-lucide="file-check"></i>
+              </div>
+              <div class="recent-report-item__info">
+                <span class="recent-report-item__name">Audit Trail Summary - Mei 2026</span>
+                <span class="recent-report-item__meta">Generated 1 minggu lalu oleh Admin</span>
+              </div>
+              <div class="recent-report-item__actions">
+                <button type="button" class="report-action-btn" title="Download">
+                  <i data-lucide="download"></i>
+                </button>
+                <button type="button" class="report-action-btn" title="View">
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

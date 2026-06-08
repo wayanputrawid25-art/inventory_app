@@ -5,9 +5,9 @@ let chartOutletStatus = null;
 let currentMenu = "penjualan";
 let selectedSalesOutlet = "";
 const MENU_STORAGE_KEY = "inventoryActiveMenu";
-const VALID_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter", "activity", "audit"];
+const VALID_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter", "activity", "audit", "reports"];
 const USER_ONLY_MENUS = ["opname"];
-const ADMIN_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter", "activity", "audit"];
+const ADMIN_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter", "activity", "audit", "reports"];
 
 const state = {
   produkOptions: [],
@@ -123,6 +123,11 @@ const pageMeta = {
     eyebrow: "Compliance & Security",
     title: "Audit Center",
     caption: "Lacak perubahan critical, approve actions, dan audit trails untuk compliance."
+  },
+  reports: {
+    eyebrow: "Analytics & Reports",
+    title: "Laporan",
+    caption: "Generate dan download laporan inventory, penjualan, dan aktivitas."
   }
 };
 
@@ -825,6 +830,11 @@ function selectMenu(event, menu) {
   if (menu === "audit") {
     document.getElementById("auditTab").style.display = "block";
     loadAuditCenter();
+  }
+
+  if (menu === "reports") {
+    document.getElementById("reportsTab").style.display = "block";
+    loadReportsPage();
   }
 }
 
@@ -5318,4 +5328,189 @@ function exportAuditLog() {
   setTimeout(() => {
     showToast('Export selesai. File akan di-download.', true);
   }, 1500);
+}
+
+/* ============================================
+   Reports Page Functions
+   ============================================ */
+
+// Mock report types
+const REPORT_TYPES = {
+  inventory: {
+    label: 'Laporan Inventory',
+    description: 'Stok gudang, movements, dan valuation report',
+    templates: ['Stok Summary', 'Stock Movements', 'Valuation Report', 'Low Stock Alert']
+  },
+  sales: {
+    label: 'Laporan Penjualan',
+    description: 'Sales performance, outlet breakdown, dan trend',
+    templates: ['Sales Summary', 'Outlet Breakdown', 'Trend Analysis', 'Top Products']
+  },
+  opname: {
+    label: 'Laporan Stok Opname',
+    description: 'Opname results, discrepancies, dan variance analysis',
+    templates: ['Opname Summary', 'Variance Report', 'Discrepancy Analysis', 'Recount Results']
+  },
+  audit: {
+    label: 'Laporan Audit',
+    description: 'Audit trails, user activities, dan compliance reports',
+    templates: ['Audit Trail', 'User Activity', 'Compliance Summary', 'Action History']
+  }
+};
+
+// Mock recent reports
+const recentReports = [
+  { id: 'RPT-001', name: 'Laporan Stok Gudang Utama - Juni 2026', generatedAt: '2 jam lalu', generatedBy: 'Admin' },
+  { id: 'RPT-002', name: 'Sales Performance Mei 2026', generatedAt: '1 hari lalu', generatedBy: 'Admin' },
+  { id: 'RPT-003', name: 'Opname Variance Report - Mei 2026', generatedAt: '3 hari lalu', generatedBy: 'Admin' },
+  { id: 'RPT-004', name: 'Audit Trail Summary - Mei 2026', generatedAt: '1 minggu lalu', generatedBy: 'Admin' }
+];
+
+function loadReportsPage() {
+  // Initialize reports page
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
+function refreshReports() {
+  showToast('Memuat ulang laporan...', true);
+  loadReportsPage();
+}
+
+function openReportGenerator(type) {
+  const reportInfo = REPORT_TYPES[type];
+  if (!reportInfo) return;
+
+  // Create modal
+  let modal = document.querySelector('.report-generator-modal');
+  if (modal) {
+    modal.remove();
+  }
+
+  modal = document.createElement('div');
+  modal.className = 'report-generator-modal open';
+  modal.id = 'reportGeneratorModal';
+
+  const templateOptions = reportInfo.templates.map(t => `<option value="${t.toLowerCase().replace(/\s+/g, '-')}">${t}</option>`).join('');
+
+  modal.innerHTML = `
+    <div class="report-generator-modal__dialog">
+      <div class="report-generator-modal__header">
+        <h3>${reportInfo.label}</h3>
+        <button type="button" class="report-generator-modal__close" onclick="closeReportGenerator()">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="report-generator-modal__body">
+        <form class="report-generator-form" id="reportGeneratorForm">
+          <div class="report-generator-form__field">
+            <label>Report Template</label>
+            <select id="reportTemplate" required>
+              <option value="">Pilih Template</option>
+              ${templateOptions}
+            </select>
+          </div>
+          <div class="report-generator-form__row">
+            <div class="report-generator-form__field">
+              <label>Tanggal Mulai</label>
+              <input type="date" id="reportStartDate" required>
+            </div>
+            <div class="report-generator-form__field">
+              <label>Tanggal Selesai</label>
+              <input type="date" id="reportEndDate" required>
+            </div>
+          </div>
+          <div class="report-generator-form__field">
+            <label>Format Output</label>
+            <select id="reportFormat">
+              <option value="pdf">PDF</option>
+              <option value="excel">Excel (XLSX)</option>
+              <option value="csv">CSV</option>
+            </select>
+          </div>
+          <div class="report-generator-form__field report-generator-form__field--checkbox">
+            <input type="checkbox" id="reportIncludeCharts">
+            <label for="reportIncludeCharts">Include Charts & Visualizations</label>
+          </div>
+          <div class="report-generator-form__field">
+            <label>Deskripsi (Optional)</label>
+            <input type="text" id="reportDescription" placeholder="Tambahkan deskripsi untuk laporan ini...">
+          </div>
+        </form>
+      </div>
+      <div class="report-generator-modal__footer">
+        <button type="button" class="btn-secondary" onclick="closeReportGenerator()">Batal</button>
+        <button type="button" class="btn-primary" onclick="generateReport('${type}')">
+          <i data-lucide="file-text"></i>
+          Generate Report
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Set default dates
+  const today = new Date();
+  const monthAgo = new Date();
+  monthAgo.setMonth(monthAgo.getMonth() - 1);
+  document.getElementById('reportStartDate').valueAsDate = monthAgo;
+  document.getElementById('reportEndDate').valueAsDate = today;
+
+  // Re-initialize Lucide icons
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
+function closeReportGenerator() {
+  const modal = document.querySelector('.report-generator-modal');
+  if (modal) {
+    modal.classList.remove('open');
+    setTimeout(() => modal.remove(), 300);
+  }
+}
+
+function generateReport(type) {
+  const template = document.getElementById('reportTemplate').value;
+  const startDate = document.getElementById('reportStartDate').value;
+  const endDate = document.getElementById('reportEndDate').value;
+  const format = document.getElementById('reportFormat').value;
+  const includeCharts = document.getElementById('reportIncludeCharts').checked;
+  const description = document.getElementById('reportDescription').value;
+
+  if (!template) {
+    showToast('Harap pilih template laporan', false);
+    return;
+  }
+
+  if (!startDate || !endDate) {
+    showToast('Harap isi tanggal mulai dan selesai', false);
+    return;
+  }
+
+  showToast(`Generating ${template.replace(/-/g, ' ')} report...`, true);
+
+  // Simulate report generation
+  setTimeout(() => {
+    closeReportGenerator();
+    showToast('Report berhasil di-generate! Download akan dimulai sebentar lagi.', true);
+    
+    // In a real app, this would trigger the actual download
+    // For demo purposes, we just show a success message
+  }, 2000);
+}
+
+function downloadReport(reportId) {
+  showToast(`Memulai download laporan ${reportId}...`, true);
+  // In a real app, this would trigger the file download
+  setTimeout(() => {
+    showToast('Download selesai', true);
+  }, 1000);
+}
+
+function viewReport(reportId) {
+  showToast(`Membuka preview laporan ${reportId}...`, true);
+  // In a real app, this would open a report preview modal or page
 }

@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Reports UI
+- **New Reports Page** - Built comprehensive reports interface for analytics and reporting
+  - Reports Header: Title with refresh button
+  - Quick Stats: Total SKU, Low Stock, Out of Stock, and Discrepancy counts
+  - Report Categories: Four category cards (Inventory, Sales, Opname, Audit)
+  - Recent Reports: List of recently generated reports with download/view actions
+  - Report Generator Modal: Form for generating custom reports with templates
+
+- **Report Categories**
+  - Laporan Inventory - Stok gudang, movements, dan valuation report
+  - Laporan Penjualan - Sales performance, outlet breakdown, dan trend
+  - Laporan Stok Opname - Opname results, discrepancies, dan variance analysis
+  - Laporan Audit - Audit trails, user activities, dan compliance reports
+
+- **Report Generator Features**
+  - Template selection for each report type
+  - Date range picker (start and end dates)
+  - Output format selection (PDF, Excel, CSV)
+  - Option to include charts and visualizations
+  - Optional description field
+
+- **Reports Functions** - Added JavaScript functions for Reports interactions
+  - `loadReportsPage()` - Initialize reports page on menu selection
+  - `refreshReports()` - Refresh reports data
+  - `openReportGenerator(type)` - Open report generator modal for specific type
+  - `closeReportGenerator()` - Close report generator modal
+  - `generateReport(type)` - Generate report with selected parameters
+  - `downloadReport(reportId)` - Download existing report
+  - `viewReport(reportId)` - View report preview
+
 #### Audit Center
 - **New Audit Center Page** - Built comprehensive audit center following wireframe from `audit-workflow.md`
   - Audit Center Header: Title, search bar, and export button
@@ -257,7 +287,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Smooth transitions on all interactive elements
 
 ### Files Changed
-- `css/style.css` - Updated sidebar and header styles; Added admin, operator dashboard, Task Center, Approval Center, Activity Timeline, and Audit Center styles
-- `index.html` - Updated sidebar HTML structure; Added admin, operator dashboard, Task Center, Approval Center, Activity Timeline, and Audit Center sections; Updated auth state JavaScript
-- `js/dashboard.js` - Added admin, operator dashboard, Task Center, Approval Center, Activity Timeline, and Audit Center functions; Updated menu handling for role-based dashboard
+- `css/style.css` - Updated sidebar and header styles; Added admin, operator dashboard, Task Center, Approval Center, Activity Timeline, Audit Center, and Reports UI styles
+- `index.html` - Updated sidebar HTML structure; Added admin, operator dashboard, Task Center, Approval Center, Activity Timeline, Audit Center, and Reports sections; Updated auth state JavaScript
+- `js/dashboard.js` - Added admin, operator dashboard, Task Center, Approval Center, Activity Timeline, Audit Center, and Reports functions; Updated menu handling for role-based dashboard
 - `CHANGELOG.md` - Documented all changes
