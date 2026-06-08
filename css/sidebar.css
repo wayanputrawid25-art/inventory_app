@@ -1,0 +1,63 @@
+/* Sidebar UI overrides for refactor/sidebar-ui
+   - This file is intentionally additive and scoped to .sidebar to avoid CSS cascade issues.
+   - Loaded only in refactor branch; main stylesheet remains unchanged.
+*/
+
+:root{
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 72px;
+  --sidebar-bg: linear-gradient(180deg, rgba(38,27,29,1) 0%, rgba(27,20,22,1) 100%);
+  --sidebar-focus: 3px rgba(37,99,235,0.16);
+}
+
+/* Base sidebar container */
+.sidebar{
+  width: var(--sidebar-width);
+  transition: width 200ms ease, transform 180ms ease;
+  will-change: width;
+}
+
+/* Collapsed state (icon-only) */
+.sidebar--collapsed{
+  width: var(--sidebar-collapsed-width) !important;
+}
+
+.sidebar .logo-copy{ display: inline-block; }
+.sidebar--collapsed .logo-copy{ display: none; }
+
+.sidebar ul{ padding: 8px 12px; }
+.sidebar li{ padding-left: 12px; padding-right: 12px; }
+.sidebar--collapsed li{ justify-content: center; }
+
+/* Drawer mode for mobile */
+.sidebar--drawer{
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  transform: translateX(-8%);
+  box-shadow: 18px 0 44px rgba(0,0,0,0.32);
+}
+.sidebar--open{ transform: translateX(0); }
+
+/* Backdrop when mobile open */
+.mobile-menu-backdrop{ display: none; position:fixed; inset:0; background: rgba(0,0,0,0.45); z-index: 40; }
+body.sidebar-open .mobile-menu-backdrop{ display:block; }
+
+/* Focus and keyboard navigation */
+.sidebar li:focus{ outline: none; box-shadow: 0 0 0 3px var(--sidebar-focus); border-radius: 12px; }
+.sidebar li[aria-current="page"]{ font-weight:700; }
+
+/* Touch target size enforcement on small screens */
+@media (max-width: 900px){
+  .sidebar{ position: fixed; left: 0; top: 0; bottom: 0; z-index: 50; transform: translateX(-110%); }
+  .sidebar--open{ transform: translateX(0); }
+  .sidebar li{ padding: 14px 18px; min-height:44px; }
+  .mobile-menu-toggle{ display:inline-flex; }
+}
+
+/* Collapse control */
+.sidebar-collapse{ background: transparent; border: none; color: inherit; padding: 8px; margin: 8px; cursor: pointer; }
+
+/* Preserve existing theme look for active state */
+.sidebar li.active{ box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04); }
