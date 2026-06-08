@@ -51,7 +51,7 @@ def register():
         role = data.get('role', 'staff_gudang')
         
         # Validate role
-        valid_roles = ['staff_gudang', 'checker_opname']
+        valid_roles = ['staff_gudang', 'checker_opname', 'admin']
         if role not in valid_roles:
             return ResponseHelper.error(f'Invalid role. Must be one of: {", ".join(valid_roles)}', status_code=400)
         

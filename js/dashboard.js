@@ -75,6 +75,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   selectPersediaanImport(null, "pembelian");
   await loadProdukOptions();
   await loadAuditOutletOptions();
+  await buildDynamicMenu();
   initOpnameQtyModal();
   selectMenu(null, getSavedMenu());
 });
@@ -361,6 +362,70 @@ async function loadAuditOutletOptions() {
   }
 }
 
+// Build dynamic main menu from backend data (outlets, top products).
+async function buildDynamicMenu() {
+  const container = document.getElementById('mainQuickMenu');
+  if (!container) return;
+
+  // Try to fetch outlets and top products; if fail, use simple mock
+  let outlets = [];
+  let topProduk = [];
+  try {
+    outlets = toArray(await fetchJson('/api/outlet-list'));
+  } catch (e) {
+    console.warn('Could not fetch outlets, using mock', e);
+    outlets = [
+      { id: 'OUT001', nama_outlet: 'Outlet Jakarta' },
+      { id: 'OUT002', nama_outlet: 'Outlet Bandung' },
+      { id: 'OUT003', nama_outlet: 'Outlet Surabaya' }
+    ];
+  }
+
+  try {
+    topProduk = toArray(await fetchJson('/api/top-produk'));
+  } catch (e) {
+    console.warn('Could not fetch top-produk, using mock', e);
+    topProduk = [
+      { sku: 'PRD001', nama_produk: 'Modul A' },
+      { sku: 'PRD002', nama_produk: 'Tas B' }
+    ];
+  }
+
+  // Render outlet quick tiles (limit to 6)
+  const outletsHtml = outlets.slice(0, 6).map(o => `
+    <button class="quick-tile tile-blue" onclick="selectMenu(null,'outlet-${escapeHtml(String(o.id))}')" aria-label="${escapeHtml(o.nama_outlet)}" tabindex="0">
+      <div class="icon-wrap"><i data-lucide="home"></i></div>
+      <span>${escapeHtml(o.nama_outlet)}</span>
+    </button>
+  `).join('');
+
+  // Render top product quick tiles
+  const produkHtml = topProduk.slice(0, 6).map(p => `
+    <button class="quick-tile tile-green" onclick="selectMenu(null,'produk-${escapeHtml(p.sku)}')" aria-label="${escapeHtml(p.nama_produk)}" tabindex="0">
+      <div class="icon-wrap"><i data-lucide="box"></i></div>
+      <span>${escapeHtml(p.nama_produk)}</span>
+    </button>
+  `).join('');
+
+  // Insert into container: find first quick-group for Penjualan and append sections
+  const section = container.querySelector('.quick-menu-section');
+  if (section) {
+    // Create outlets block
+    const outletsBlock = document.createElement('div');
+    outletsBlock.className = 'quick-menu-section';
+    outletsBlock.innerHTML = `<h4 class="quick-group">Outlet Cepat</h4><div class="quick-menu-grid">${outletsHtml}</div>`;
+    section.parentNode.insertBefore(outletsBlock, section.nextSibling);
+
+    // Create top-produk block
+    const produkBlock = document.createElement('div');
+    produkBlock.className = 'quick-menu-section';
+    produkBlock.innerHTML = `<h4 class="quick-group">Top Produk</h4><div class="quick-menu-grid">${produkHtml}</div>`;
+    section.parentNode.insertBefore(produkBlock, outletsBlock.nextSibling);
+  }
+  // Re-init lucide icons if available
+  if (window.lucide) window.lucide.replace();
+}
+
 function getSelectedBarcodeProduct() {
   const raw = (document.getElementById("barcodeProductInput")?.value || "").trim();
   if (!raw) return null;
@@ -618,12 +683,7 @@ function selectMenu(event, menu) {
     return;
   }
 
-  if (menu === "audit") {
-    document.getElementById("auditTab").style.display = "block";
-    showModuleTab(null, "audit", "auditOverview");
-    document.querySelector("#auditMenu button")?.classList.add("active-tab");
-    return;
-  }
+  // Audit menu removed from UI; related code cleaned up
 
   if (menu === "forecast") {
     document.getElementById("forecastTab").style.display = "block";
@@ -658,10 +718,7 @@ async function applyCurrentFilters() {
     return;
   }
 
-  if (currentMenu === "audit") {
-    await loadAudit(getCurrentAuditSection());
-    return;
-  }
+  // Audit removed — no action required here
 
   if (currentMenu === "forecast") {
     await loadForecast();

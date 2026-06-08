@@ -8,6 +8,36 @@
   <link rel="icon" type="image/png" href="/assets/logo.png">
 </head>
 <body>
+  <header class="app-header">
+    <div class="header-left">
+      <button class="mobile-menu-toggle" type="button" onclick="toggleMobileMenu()" aria-label="Buka menu">
+        <i data-lucide="menu"></i>
+      </button>
+      <div class="brand">CV EPIC Warehouse</div>
+    </div>
+    <div class="header-right">
+      <button class="btn-secondary" onclick="openLogin()">Masuk</button>
+    </div>
+  </header>
+  <!-- Login modal -->
+  <div id="loginModal" class="login-modal" style="display:none;">
+    <div class="login-panel">
+      <h3>Masuk ke Dashboard</h3>
+      <p class="page-caption">Masuk dengan akun Anda untuk melihat laporan dan melakukan tindakan.</p>
+      <label class="filter-control">
+        <span>Username</span>
+        <input type="text" id="loginUsername" placeholder="Username">
+      </label>
+      <label class="filter-control">
+        <span>Password</span>
+        <input type="password" id="loginPassword" placeholder="Password">
+      </label>
+      <div style="display:flex;gap:10px;margin-top:12px;justify-content:flex-end;">
+        <button class="btn-secondary" onclick="closeLogin()">Batal</button>
+        <button class="btn-primary" onclick="performLogin()">Masuk</button>
+      </div>
+    </div>
+  </div>
   <button type="button" class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Buka menu">
     <i data-lucide="menu"></i>
   </button>
@@ -27,10 +57,7 @@
         <i data-lucide="bar-chart-3"></i>
         <span>Penjualan</span>
       </li>
-      <li onclick="selectMenu(event,'audit')">
-        <i data-lucide="clipboard-check"></i>
-        <span>Audit Stok</span>
-      </li>
+      <!-- Audit menu removed per redesign request -->
       <li onclick="selectMenu(event,'persediaan')">
         <i data-lucide="boxes"></i>
         <span>Persediaan</span>
@@ -94,6 +121,39 @@
       </div>
     </section>
 
+    <!-- Quick main menu tiles (per desain baru) -->
+    <div class="card" id="mainQuickMenu">
+      <h3>Menu Cepat</h3>
+      <div class="quick-menu-section">
+        <h4 class="quick-group">Penjualan</h4>
+        <div class="quick-menu-grid">
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'penjualan')" aria-label="Penjualan" tabindex="0"><div class="icon-wrap"><img src="/static/icons/icon-penjualan.svg" alt="" class="tile-svg-icon"></div><span>Penjualan</span></button>
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'pembelian')" aria-label="Pembelian" tabindex="0"><div class="icon-wrap"><img src="/static/icons/icon-pembelian.svg" alt="" class="tile-svg-icon"></div><span>Pembelian</span></button>
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'pengiriman')" aria-label="Pengiriman" tabindex="0"><div class="icon-wrap"><i data-lucide="truck"></i></div><span>Pengiriman</span></button>
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'uang-muka')" aria-label="Uang Muka" tabindex="0"><div class="icon-wrap"><img src="/static/icons/icon-wallet.svg" alt="" class="tile-svg-icon"></div><span>Uang Muka</span></button>
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'faktur')" aria-label="Faktur" tabindex="0"><div class="icon-wrap"><i data-lucide="file-text"></i></div><span>Faktur</span></button>
+        </div>
+
+        <h4 class="quick-group">Pelanggan & Kategori</h4>
+        <div class="quick-menu-grid">
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'penerimaan')"><div class="icon-wrap"><i data-lucide="inbox"></i></div><span>Penerimaan</span></button>
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'retur')"><div class="icon-wrap"><i data-lucide="corner-up-left"></i></div><span>Retur</span></button>
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'kategori-pelanggan')"><div class="icon-wrap"><i data-lucide="users"></i></div><span>Kategori Pelanggan</span></button>
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'kategori-penjualan')"><div class="icon-wrap"><i data-lucide="tag"></i></div><span>Kategori Penjualan</span></button>
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'pelanggan')"><div class="icon-wrap"><i data-lucide="user"></i></div><span>Pelanggan</span></button>
+        </div>
+
+        <h4 class="quick-group">Operasional</h4>
+        <div class="quick-menu-grid">
+          <button class="quick-tile tile-orange" onclick="selectMenu(null,'penyesuaian-harga')"><div class="icon-wrap"><i data-lucide="percent"></i></div><span>Penyesuaian Harga</span></button>
+          <button class="quick-tile tile-orange" onclick="selectMenu(null,'komisi')"><div class="icon-wrap"><i data-lucide="award"></i></div><span>Komisi Penjual</span></button>
+          <button class="quick-tile tile-orange" onclick="selectMenu(null,'target')"><div class="icon-wrap"><i data-lucide="target"></i></div><span>Target Penjualan</span></button>
+          <button class="quick-tile tile-orange" onclick="selectMenu(null,'smartlink')"><div class="icon-wrap"><i data-lucide="link-2"></i></div><span>SmartLink e-Commerce</span></button>
+          <button class="quick-tile tile-purple" onclick="selectMenu(null,'checkin')"><div class="icon-wrap"><i data-lucide="map-pin"></i></div><span>Check In</span></button>
+        </div>
+      </div>
+    </div>
+
     <div class="tab-menu" id="salesTabMenu">
       <button onclick="showTab(event,'kpiTab')" class="active-tab">KPI</button>
       <button onclick="showTab(event,'chartTab')">Grafik</button>
@@ -148,6 +208,32 @@
         </div>
       </div>
     </section>
+
+    <!-- Inventory quick menu -->
+    <div class="card" id="inventoryQuickMenu" style="margin-top:18px;">
+      <h3>Persediaan & Gudang</h3>
+      <div class="quick-menu-section">
+        <div class="quick-menu-grid">
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'permintaan')" aria-label="Permintaan Barang" tabindex="0"><div class="icon-wrap"><i data-lucide="plus-square"></i></div><span>Permintaan Barang</span></button>
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'pemindahan')" aria-label="Pemindahan Barang" tabindex="0"><div class="icon-wrap"><i data-lucide="move"></i></div><span>Pemindahan Barang</span></button>
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'penyesuaian')" aria-label="Penyesuaian Persediaan" tabindex="0"><div class="icon-wrap"><i data-lucide="sliders"></i></div><span>Penyesuaian Persediaan</span></button>
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'pemesanan')" aria-label="Pekerjaan Pesanan" tabindex="0"><div class="icon-wrap"><i data-lucide="clipboard-list"></i></div><span>Pekerjaan Pesanan</span></button>
+          <button class="quick-tile tile-green" onclick="selectMenu(null,'bahan-baku')" aria-label="Penambahan Bahan Baku" tabindex="0"><div class="icon-wrap"><i data-lucide="package"></i></div><span>Penambahan Bahan Baku</span></button>
+
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'perintah-opname')" aria-label="Perintah Stok Opname" tabindex="0"><div class="icon-wrap"><img src="/static/icons/icon-opname.svg" alt="" class="tile-svg-icon"></div><span>Perintah Stok Opname</span></button>
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'hasil-opname')" aria-label="Hasil Stok Opname" tabindex="0"><div class="icon-wrap"><i data-lucide="file-text"></i></div><span>Hasil Stok Opname</span></button>
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'barang-jasa')" aria-label="Barang dan Jasa" tabindex="0"><div class="icon-wrap"><img src="/static/icons/icon-barang.svg" alt="" class="tile-svg-icon"></div><span>Barang & Jasa</span></button>
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'gudang')" aria-label="Gudang" tabindex="0"><div class="icon-wrap"><i data-lucide="home"></i></div><span>Gudang</span></button>
+          <button class="quick-tile tile-blue" onclick="selectMenu(null,'satuan')" aria-label="Satuan Barang" tabindex="0"><div class="icon-wrap"><i data-lucide="hash"></i></div><span>Satuan Barang</span></button>
+
+          <button class="quick-tile tile-orange" onclick="selectMenu(null,'kategori-barang')" aria-label="Kategori Barang" tabindex="0"><div class="icon-wrap"><i data-lucide="grid"></i></div><span>Kategori Barang</span></button>
+          <button class="quick-tile tile-orange" onclick="selectMenu(null,'merek')" aria-label="Merek Barang" tabindex="0"><div class="icon-wrap"><i data-lucide="tag"></i></div><span>Merek Barang</span></button>
+          <button class="quick-tile tile-orange" onclick="selectMenu(null,'pemenuhan')" aria-label="Pemenuhan Pesanan" tabindex="0"><div class="icon-wrap"><i data-lucide="truck"></i></div><span>Pemenuhan Pesanan</span></button>
+          <button class="quick-tile tile-orange" onclick="selectMenu(null,'per-gudang')" aria-label="Barang per Gudang" tabindex="0"><div class="icon-wrap"><i data-lucide="warehouse"></i></div><span>Barang per Gudang</span></button>
+          <button class="quick-tile tile-purple" onclick="selectMenu(null,'stok-minimum')" aria-label="Stok Minimum" tabindex="0"><div class="icon-wrap"><i data-lucide="alert-triangle"></i></div><span>Barang Stok Minimum</span></button>
+        </div>
+      </div>
+    </div>
 
     <section id="chartTab" class="tab-content" style="display:none;">
       <div class="grid-2">
@@ -421,157 +507,7 @@
       </div>
     </section>
 
-    <section id="auditTab" class="tab-content" style="display:none;">
-      <div class="card">
-        <div class="section-header">
-          <div>
-            <p class="section-eyebrow">Outlet Stock Assurance</p>
-            <h3>Audit Stok Outlet</h3>
-          </div>
-          <div class="section-actions">
-            <label class="filter-control audit-filter-control">
-              <span>Outlet</span>
-              <select id="auditOutletFilter" onchange="applyCurrentFilters()">
-                <option value="">Semua Outlet</option>
-              </select>
-            </label>
-            <button class="btn-secondary" onclick="exportCurrentModule()">Export CSV</button>
-          </div>
-        </div>
-
-        <div class="subtab-menu" id="auditMenu">
-          <button onclick="showModuleTab(event,'audit','auditOverview')" class="active-tab">Ringkasan</button>
-          <button onclick="showModuleTab(event,'audit','auditOutletStock')">Stok Outlet</button>
-          <button onclick="showModuleTab(event,'audit','auditLog')">Mutasi</button>
-          <button onclick="showModuleTab(event,'audit','auditControl')">Kontrol</button>
-          <button onclick="showModuleTab(event,'audit','auditIntegration')">Sinkron API</button>
-        </div>
-
-        <div id="auditOverview" class="module-content">
-          <div class="kpi-grid">
-            <div class="kpi-box kpi-blue">
-              <p>Total Mutasi</p>
-              <h2 id="audit_total_log">0</h2>
-            </div>
-            <div class="kpi-box kpi-green">
-              <p>Stok Masuk Outlet</p>
-              <h2 id="audit_penjualan_total">0</h2>
-            </div>
-            <div class="kpi-box kpi-yellow">
-              <p>Penjualan Outlet</p>
-              <h2 id="audit_pembelian_total">0</h2>
-            </div>
-            <div class="kpi-box kpi-red">
-              <p>Qty Bergerak</p>
-              <h2 id="audit_qty_total">0</h2>
-            </div>
-            <div class="kpi-box kpi-dark">
-              <p>Outlet Bermasalah</p>
-              <h2 id="audit_problem_outlet">0</h2>
-            </div>
-          </div>
-          <div class="insight-grid top-space" id="auditInsightCards"></div>
-          <div class="top-space">
-            <div class="section-header detail-header">
-              <div>
-                <p class="section-eyebrow">Analisis Level</p>
-                <h3>Selisih Modul vs Jumlah Siswa</h3>
-              </div>
-            </div>
-            <div class="table-shell">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Outlet</th>
-                    <th>Level</th>
-                    <th>Jumlah Siswa</th>
-                    <th>Modul Keluar</th>
-                    <th>Target Modul</th>
-                    <th>Selisih</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="auditAnalysisBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div id="auditOutletStock" class="module-content" style="display:none;">
-          <div class="table-shell">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Outlet</th>
-                  <th>SKU</th>
-                  <th>Nama Produk</th>
-                  <th>Opening</th>
-                  <th>Masuk</th>
-                  <th>Keluar</th>
-                  <th>Penyesuaian</th>
-                  <th>Stok Akhir</th>
-                </tr>
-              </thead>
-              <tbody id="auditOutletBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div id="auditLog" class="module-content" style="display:none;">
-          <div class="table-shell">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Tanggal</th>
-                  <th>Sumber</th>
-                  <th>Jenis</th>
-                  <th>Outlet</th>
-                  <th>SKU</th>
-                  <th>Qty</th>
-                  <th>Referensi</th>
-                  <th>Keterangan</th>
-                </tr>
-              </thead>
-              <tbody id="auditBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div id="auditControl" class="module-content" style="display:none;">
-          <div class="table-shell">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Outlet</th>
-                  <th>SKU</th>
-                  <th>Flag</th>
-                  <th>Detail</th>
-                </tr>
-              </thead>
-              <tbody id="auditFlagBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div id="auditIntegration" class="module-content" style="display:none;">
-          <div class="insight-grid">
-            <div class="insight-card">
-              <h4>Status Integrasi</h4>
-              <p id="auditDbStatus">Mengecek struktur database audit outlet...</p>
-            </div>
-            <div class="insight-card">
-              <h4>Rancangan Tabel</h4>
-              <p>SQL proposal sudah disiapkan di file <code>db_audit_outlet_proposal.sql</code> dan sudah saya sinkronkan dengan struktur audit baru di aplikasi.</p>
-            </div>
-            <div class="insight-card">
-              <h4>Aturan Audit</h4>
-              <p>Penjualan warehouse diperlakukan sebagai stok masuk outlet. Penjualan outlet wajib dipisah agar stok outlet, selisih, dan indikasi kecurangan bisa terbaca dengan gamblang.</p>
-            </div>
-          </div>
-          <div class="note-panel top-space" id="auditIntegrationNotes"></div>
-        </div>
-      </div>
-    </section>
+    <!-- Audit tab removed per redesign request -->
 
     <section id="forecastTab" class="tab-content" style="display:none;">
       <div class="card">
@@ -1066,6 +1002,11 @@
 
   <div id="toast"></div>
 
+  <footer class="app-footer">
+    <div>© CV EPIC Warehouse</div>
+    <div class="credit">Design & UI enhancements: Copilot</div>
+  </footer>
+
   <div id="opnameQtyModal" class="app-modal" aria-hidden="true">
     <div class="app-modal__backdrop" data-opname-qty-close></div>
     <div class="app-modal__dialog opname-qty-dialog" role="dialog" aria-modal="true" aria-labelledby="opnameQtyModalTitle">
@@ -1115,6 +1056,184 @@
   <script src="/js/dashboard-opname-perintah.js?v=opname-kategori-20260521"></script>
   <script>
     lucide.createIcons();
+  </script>
+  <script>
+    function openLogin() {
+      document.getElementById('loginModal').style.display = 'grid';
+    }
+    function closeLogin() {
+      document.getElementById('loginModal').style.display = 'none';
+    }
+
+    async function performLogin() {
+      const user = document.getElementById('loginUsername').value;
+      const pass = document.getElementById('loginPassword').value;
+      if (!user || !pass) {
+        alert('Masukkan username dan password');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: user, password: pass })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.message || 'Login gagal', false);
+          return;
+        }
+
+        // Expect tokens or user data in response
+        window.localStorage.setItem('auth_user', JSON.stringify(data.data || data));
+        showToast('Login berhasil', true);
+        closeLogin();
+        // Trigger refresh of current view
+        applyCurrentFilters();
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal menghubungi server auth', false);
+      }
+    }
+  </script>
+  <script>
+    // Populate mock KPI data for local preview when backend not available
+    function populateMockKPI() {
+      const hasUser = !!window.localStorage.getItem('auth_user');
+      if (hasUser) return; // if logged in, real backend should provide data
+
+      const mapping = {
+        kpi_qty: 12450,
+        kpi_nilai: 'Rp 2.361.824.148',
+        kpi_produk: 872,
+        kpi_produk_belum: 145,
+        kpi_outlet: 342,
+        kpi_outlet_belum: 12,
+        kpi_modal: 'Rp 1.050.000.000',
+        kpi_profit: 'Rp 1.311.824.148'
+      };
+
+      Object.keys(mapping).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = mapping[id];
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        populateMockKPI();
+        lucide.createIcons();
+      } catch (e) { console.error(e); }
+    });
+  </script>
+  <script>
+    // Render mock charts when backend not available
+    function populateMockCharts() {
+      if (!window.Chart) return;
+      try {
+        // Annual sales chart
+        const ctx = document.getElementById('chart');
+        if (ctx) {
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+              datasets: [{
+                label: 'Penjualan (Rp)',
+                data: [120,150,180,170,200,240,230,260,300,320,310,350].map(v=>v*1000000),
+                borderColor: 'rgba(255,99,71,0.9)',
+                backgroundColor: 'rgba(255,99,71,0.12)',
+                tension: 0.3,
+                fill: true
+              }]
+            },
+            options: { responsive:true, maintainAspectRatio:false }
+          });
+        }
+
+        // Top produk bar
+        const ctx2 = document.getElementById('chartTopProduk');
+        if (ctx2) {
+          new Chart(ctx2, {
+            type: 'bar',
+            data: {
+              labels: ['Modul A','Tas B','Seragam C','Poster D','Lainnya'],
+              datasets:[{data:[190,78,5,12,9], backgroundColor:['#10b981','#3b82f6','#f97316','#a78bfa','#f59e0b']}]
+            },
+            options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+          });
+        }
+
+        // Top outlet pie
+        const ctx3 = document.getElementById('chartTopOutlet');
+        if (ctx3) {
+          new Chart(ctx3, {
+            type: 'doughnut',
+            data: { labels:['Jakarta','Bandung','Surabaya','Medan','Makassar'], datasets:[{data:[35,20,18,15,12], backgroundColor:['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6']}] },
+            options:{ responsive:true, maintainAspectRatio:false }
+          });
+        }
+
+        // Outlet status horizontal bar
+        const ctx4 = document.getElementById('chartOutletStatus');
+        if (ctx4) {
+          new Chart(ctx4, { type:'bar', data:{ labels:['Sudah','Belum'], datasets:[{data:[78,22], backgroundColor:['#10b981','#ef4444']}] }, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} } });
+        }
+      } catch(e){ console.error('Chart init error',e); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      populateMockCharts();
+    });
+  </script>
+  <script>
+    // Populate persediaan table with mock rows for preview
+    function populateMockPersediaan() {
+      const body = document.getElementById('persediaanBody');
+      if (!body) return;
+      const samples = [
+        ['SKU001','Modul A','Modul',120,50,80,0,150],
+        ['SKU002','Tas B','Tas',60,20,40,0,80],
+        ['SKU003','Seragam C','Seragam',20,0,15,0,5],
+        ['SKU004','Poster D','Poster',10,0,8,0,2],
+        ['SKU005','Buku E','Lain-lain',200,70,120,0,150]
+      ];
+      body.innerHTML = samples.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td>${r[7]}</td></tr>`).join('');
+
+      const restock = document.getElementById('persediaanRestockBody');
+      if (restock) {
+        restock.innerHTML = samples.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[7]}</td><td>${r[7] < 20 ? 'Perlu Restock' : 'Normal'}</td></tr>`).join('');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => populateMockPersediaan());
+  </script>
+  <script>
+    // Populate outlet and top-produk tables for richer preview
+    function populateMockOutlet() {
+      const outBody = document.getElementById('outletBody');
+      if (!outBody) return;
+      const rows = [
+        ['OUT001','Outlet Jakarta','Jakarta',1200,'Aktif'],
+        ['OUT002','Outlet Bandung','Bandung',780,'Aktif'],
+        ['OUT003','Outlet Surabaya','Surabaya',540,'Nonaktif']
+      ];
+      outBody.innerHTML = rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`).join('');
+    }
+
+    function populateMockTopProduk() {
+      const topBody = document.getElementById('topProdukBody');
+      if (!topBody) return;
+      const items = [
+        ['PRD001','Modul A',540,1200000],
+        ['PRD002','Tas B',430,860000],
+        ['PRD003','Seragam C',320,640000]
+      ];
+      topBody.innerHTML = items.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => { populateMockOutlet(); populateMockTopProduk(); });
   </script>
 </body>
 </html>
