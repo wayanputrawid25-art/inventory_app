@@ -831,6 +831,52 @@ button:hover {
   background: rgba(10,10,10,0.6);
   z-index: 9999;
 }
+
+.login-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+}
+.login-mode-tabs button {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 800;
+}
+.login-mode-tabs button.active-tab {
+  color: var(--text);
+  background: linear-gradient(135deg, rgba(220,38,38,0.35), rgba(37,99,235,0.22));
+  box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+}
+.login-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  justify-content: flex-end;
+}
+.auth-user-badge {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  background: rgba(255,255,255,0.04);
+  font-size: 13px;
+  font-weight: 800;
+  padding: 9px 12px;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .login-panel {
   width: 420px;
   padding: 22px;
@@ -860,6 +906,10 @@ button:hover {
   margin-left: 12px;
 }
 .app-header .header-right { margin-right: 20px; }
+@media (max-width: 640px) {
+  .login-panel { width: min(92vw, 420px); }
+  .auth-user-badge { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
 
 .container { margin-top: 84px; }
 

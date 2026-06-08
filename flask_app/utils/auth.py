@@ -31,12 +31,13 @@ class AuthService:
             'user_id': user_id
         }
         
+        identity = str(user_id)
         access_token = create_access_token(
-            identity=user_id,
+            identity=identity,
             additional_claims=additional_claims
         )
         refresh_token = create_refresh_token(
-            identity=user_id,
+            identity=identity,
             additional_claims=additional_claims
         )
         
@@ -47,31 +48,42 @@ class AuthService:
         }
     
     @staticmethod
-    def login(username: str, password: str, ip_address: str = None, user_agent: str = None):
-        """Login user"""
-        user = User.query.filter_by(username=username).first()
+    def login(username: str, password: str, ip_address: str = None, user_agent: str = None, login_as: str = None):
+        """Login user with optional admin/user portal validation."""
+        normalized_username = (username or '').strip()
+        user = User.query.filter_by(username=normalized_username).first()
         
-        if not user or not AuthService.verify_password(password, user.password_hash):
+        if not user or not AuthService.verify_password(password or '', user.password_hash):
             if user:
-                user.failed_login_count += 1
+                user.failed_login_count = (user.failed_login_count or 0) + 1
                 db.session.commit()
             return None, "Invalid username or password"
         
         if not user.is_active:
             return None, "User account is inactive"
+
+        role = str(user.role.value)
+        if login_as == 'admin' and role != 'admin':
+            return None, "Portal admin hanya untuk akun admin"
+        if login_as == 'user' and role == 'admin':
+            return None, "Akun admin harus masuk melalui portal admin"
         
-        # Reset failed login count
+        # Reset failed login count and mark previous sessions inactive so the
+        # active session table remains compact and logout state is predictable.
         user.failed_login_count = 0
         user.last_login = datetime.utcnow()
+        UserSession.query.filter_by(user_id=user.id, is_active=True).update({
+            'is_active': False,
+            'logout_at': datetime.utcnow()
+        })
         
-        # Create session
-        tokens = AuthService.create_tokens(user.id, user.username, str(user.role.value))
-        
+        tokens = AuthService.create_tokens(user.id, user.username, role)
+        token_hash = hashlib.sha256(tokens['access_token'].encode('utf-8')).hexdigest()
         session = UserSession(
             user_id=user.id,
-            session_token=tokens['access_token'],
+            session_token=token_hash,
             ip_address=ip_address,
-            user_agent=user_agent,
+            user_agent=(user_agent or '')[:500],
             is_active=True
         )
         
@@ -82,8 +94,9 @@ class AuthService:
             'user_id': user.id,
             'username': user.username,
             'nama_lengkap': user.nama_lengkap,
-            'role': str(user.role.value),
+            'role': role,
             'outlet_id': user.outlet_id,
+            'login_as': 'admin' if role == 'admin' else 'user',
             **tokens
         }, None
     
@@ -139,7 +152,7 @@ def login_required(f):
     @jwt_required()
     def decorated_function(*args, **kwargs):
         try:
-            current_user_id = get_jwt_identity()
+            current_user_id = int(get_jwt_identity())
             user = User.query.get(current_user_id)
             
             if not user or not user.is_active:

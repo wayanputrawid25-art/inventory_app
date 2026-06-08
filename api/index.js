@@ -1,3 +1,4 @@
+import authHandler from "../backend/auth.js";
 import addOutletHandler from "../backend/add-outlet.js";
 import addPembelianHandler from "../backend/add-pembelian.js";
 import addPenjualanHandler from "../backend/add-penjualan.js";
@@ -30,6 +31,10 @@ import topProdukHandler from "../backend/top-produk.js";
 import miniReviewHandler from "../backend/mini-review.js";
 
 const routes = {
+  "POST /v1/auth/login": authHandler,
+  "POST /v1/auth/login/admin": authHandler,
+  "POST /v1/auth/login/user": authHandler,
+  "POST /v1/auth/logout": authHandler,
   "GET /kpi": kpiHandler,
   "GET /chart": chartHandler,
   "GET /mini-review": miniReviewHandler,

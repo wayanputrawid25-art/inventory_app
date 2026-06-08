@@ -5,7 +5,7 @@ let chartOutletStatus = null;
 let currentMenu = "penjualan";
 let selectedSalesOutlet = "";
 const MENU_STORAGE_KEY = "inventoryActiveMenu";
-const VALID_MENUS = ["penjualan", "audit", "persediaan", "forecast", "opname"];
+const VALID_MENUS = ["penjualan", "persediaan", "forecast", "opname"];
 
 const state = {
   produkOptions: [],
@@ -74,8 +74,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   selectPersediaanInput(null, "pembelian");
   selectPersediaanImport(null, "pembelian");
   await loadProdukOptions();
-  await loadAuditOutletOptions();
-  await buildDynamicMenu();
   initOpnameQtyModal();
   selectMenu(null, getSavedMenu());
 });
@@ -252,8 +250,21 @@ function escapeHtml(value = "") {
     .replaceAll("'", "&#39;");
 }
 
-async function fetchJson(url, options) {
-  const response = await fetch(url, options);
+function getAuthHeaders() {
+  try {
+    const auth = JSON.parse(window.localStorage.getItem('auth_user') || 'null');
+    return auth?.access_token ? { Authorization: `Bearer ${auth.access_token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
+async function fetchJson(url, options = {}) {
+  const headers = {
+    ...getAuthHeaders(),
+    ...(options.headers || {})
+  };
+  const response = await fetch(url, { ...options, headers });
   const text = await response.text();
   let data = null;
 
@@ -264,7 +275,7 @@ async function fetchJson(url, options) {
   }
 
   if (!response.ok) {
-    throw new Error(data?.error || `HTTP ${response.status}`);
+    throw new Error(data?.message || data?.error || `HTTP ${response.status}`);
   }
 
   if (data && typeof data === 'object' && data.hasOwnProperty('success')) {

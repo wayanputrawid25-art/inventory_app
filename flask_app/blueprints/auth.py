@@ -10,32 +10,46 @@ import logging
 auth_bp = Blueprint('auth', __name__)
 logger = logging.getLogger(__name__)
 
-@auth_bp.route('/login', methods=['POST'])
-@validate_json(['username', 'password'])
-def login():
-    """Login endpoint"""
+def _login_with_portal(login_as=None):
+    """Shared login handler. login_as can be admin, user, or None."""
     try:
         data = request.get_json()
         username = data.get('username')
         password = data.get('password')
         
-        # Get request info
-        ip_address = request.remote_addr
+        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
         user_agent = request.headers.get('User-Agent', '')
         
-        # Authenticate
-        user_data, error = AuthService.login(username, password, ip_address, user_agent)
+        user_data, error = AuthService.login(username, password, ip_address, user_agent, login_as=login_as)
         
         if error:
             logger.warning(f'Login failed for user {username}: {error}')
             return ResponseHelper.error(error, status_code=401)
         
-        logger.info(f'User {username} logged in successfully')
+        logger.info(f'User {username} logged in successfully via {login_as or "default"} portal')
         return ResponseHelper.success(user_data, 'Login successful', 200)
     
     except Exception as e:
         logger.error(f'Login error: {str(e)}')
         return ResponseHelper.error(str(e), status_code=500)
+
+@auth_bp.route('/login', methods=['POST'])
+@validate_json(['username', 'password'])
+def login():
+    """Backward-compatible login endpoint."""
+    return _login_with_portal(None)
+
+@auth_bp.route('/login/admin', methods=['POST'])
+@validate_json(['username', 'password'])
+def login_admin():
+    """Admin-only login endpoint."""
+    return _login_with_portal('admin')
+
+@auth_bp.route('/login/user', methods=['POST'])
+@validate_json(['username', 'password'])
+def login_user():
+    """Operational user login endpoint. Admin accounts use /login/admin."""
+    return _login_with_portal('user')
 
 @auth_bp.route('/register', methods=['POST'])
 @validate_json(['username', 'email', 'password', 'nama_lengkap'])
@@ -88,7 +102,7 @@ def register():
 def logout():
     """Logout endpoint"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         
         # Logout user
         AuthService.logout(user_id)
@@ -105,7 +119,7 @@ def logout():
 def get_current_user():
     """Get current user info"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         claims = get_jwt()
         
         user = User.query.get(user_id)
@@ -137,7 +151,7 @@ def get_current_user():
 def change_password():
     """Change user password"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         data = request.get_json()
         
         old_password = data.get('old_password')
@@ -172,7 +186,7 @@ def change_password():
 def refresh():
     """Refresh access token"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         claims = get_jwt()
         
         user = User.query.get(user_id)
@@ -193,7 +207,7 @@ def refresh():
 def get_sessions():
     """Get user sessions"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         
         sessions = UserSession.query.filter_by(user_id=user_id, is_active=True).all()
         
@@ -219,7 +233,7 @@ def get_sessions():
 def logout_all_sessions():
     """Logout semua sessions user"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         
         sessions = UserSession.query.filter_by(user_id=user_id, is_active=True).all()
         
