@@ -1,4 +1,4 @@
-"""
+r"""
 Run a SQL file against the database specified by DATABASE_URL env var.
 Usage:
   set DATABASE_URL="postgresql+psycopg2://user:pass@host:port/dbname?sslmode=require"
