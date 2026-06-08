@@ -795,6 +795,17 @@ button:hover {
   border: 1px solid rgba(255,255,255,0.02);
 }
 .quick-tile i { width:26px;height:26px }
+.tile-svg-icon { width:28px; height:28px; display:block; color:inherit }
+
+/* Keyboard focus for quick tiles */
+.quick-tile[tabindex], .quick-tile:focus {
+  outline: none;
+}
+.quick-tile:focus-visible, .quick-tile[tabindex]:focus-visible {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35), 0 0 0 4px rgba(255,255,255,0.06);
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.12);
+}
 .quick-tile span{ font-size:13px; display:block; max-width:120px }
 .quick-tile.tile-green { background: linear-gradient(180deg, rgba(52,199,89,0.04), rgba(52,199,89,0.01)); border-color: rgba(52,199,89,0.12); }
 .quick-tile.tile-blue  { background: linear-gradient(180deg, rgba(37,99,235,0.04), rgba(37,99,235,0.01)); border-color: rgba(37,99,235,0.12); }
