@@ -148,6 +148,10 @@
             <i data-lucide="clipboard-check"></i>
             <span>Task Center</span>
           </li>
+          <li data-menu="approvalcenter" onclick="selectMenu(event,'approvalcenter')">
+            <i data-lucide="check-square"></i>
+            <span>Approval Center</span>
+          </li>
         </ul>
       </div>
     </nav>
@@ -1602,6 +1606,103 @@
               <!-- Closed tasks -->
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Approval Center -->
+    <section id="approvalcenterTab" class="tab-content" style="display:none;">
+      <div class="approvalcenter">
+        <!-- Header -->
+        <div class="approvalcenter-header">
+          <div class="approvalcenter-header__left">
+            <p class="section-eyebrow">Review & Approval</p>
+            <h2>Approval Center</h2>
+            <span class="page-caption">Tinjau dan approve submitted work dari counters dan operators.</span>
+          </div>
+          <div class="approvalcenter-header__right">
+            <div class="approvalcenter-search">
+              <i data-lucide="search"></i>
+              <input type="text" id="approvalcenterSearch" placeholder="Cari approval..." oninput="filterApprovals()">
+            </div>
+            <div class="approval-filter-group">
+              <select id="approvalTypeFilter" onchange="filterApprovals()">
+                <option value="">Semua Tipe</option>
+                <option value="opname">Stok Opname</option>
+                <option value="adjustment">Penyesuaian</option>
+                <option value="task">Task</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="approvalcenter-stats">
+          <div class="approval-stat">
+            <span class="approval-stat__value" id="approvalCountTotal">6</span>
+            <span class="approval-stat__label">Total Pending</span>
+          </div>
+          <div class="approval-stat stat-urgent">
+            <span class="approval-stat__value" id="approvalCountUrgent">2</span>
+            <span class="approval-stat__label">Urgent</span>
+          </div>
+          <div class="approval-stat stat-opname">
+            <span class="approval-stat__value" id="approvalCountOpname">4</span>
+            <span class="approval-stat__label">Stok Opname</span>
+          </div>
+          <div class="approval-stat stat-adjustment">
+            <span class="approval-stat__value" id="approvalCountAdjustment">1</span>
+            <span class="approval-stat__label">Penyesuaian</span>
+          </div>
+          <div class="approval-stat stat-approved">
+            <span class="approval-stat__value" id="approvalCountApproved">12</span>
+            <span class="approval-stat__label">Approved Hari Ini</span>
+          </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="approval-filter-tabs">
+          <button type="button" class="approval-filter-tab active" onclick="setApprovalFilter('pending')">
+            <span class="approval-filter-tab__count" id="pendingCount">6</span>
+            Pending Review
+          </button>
+          <button type="button" class="approval-filter-tab" onclick="setApprovalFilter('approved')">
+            <span class="approval-filter-tab__count" id="approvedCount">12</span>
+            Approved
+          </button>
+          <button type="button" class="approval-filter-tab" onclick="setApprovalFilter('rejected')">
+            <span class="approval-filter-tab__count" id="rejectedCount">2</span>
+            Rejected
+          </button>
+          <button type="button" class="approval-filter-tab" onclick="setApprovalFilter('recount')">
+            <span class="approval-filter-tab__count" id="recountCount">1</span>
+            Recount
+          </button>
+        </div>
+
+        <!-- Approval List -->
+        <div id="approvalListView" class="approvalcenter-content">
+          <div class="approval-list">
+            <div class="approval-list-header">
+              <div class="approval-col approval-col-type">Tipe</div>
+              <div class="approval-col approval-col-title">Judul</div>
+              <div class="approval-col approval-col-submitter">Submitter</div>
+              <div class="approval-col approval-col-date">Tanggal</div>
+              <div class="approval-col approval-col-priority">Priority</div>
+              <div class="approval-col approval-col-status">Status</div>
+              <div class="approval-col approval-col-actions">Actions</div>
+            </div>
+            <div id="approvalListBody">
+              <!-- Approval rows will be populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="approvalEmptyState" class="approvalcenter-empty" style="display:none;">
+          <i data-lucide="check-circle"></i>
+          <h3>Tidak ada approval</h3>
+          <p>Tidak ada item yang memerlukan review pada kategori ini.</p>
         </div>
       </div>
     </section>

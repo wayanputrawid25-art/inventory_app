@@ -9,6 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Approval Center
+- **New Approval Center Page** - Built comprehensive approval center following wireframe from `approval-workflow.md`
+  - Approval Center Header: Title, search bar, and type filter
+  - Stats Cards: Total pending, urgent, opname, adjustment, and approved today
+  - Filter Tabs: Pending Review, Approved, Rejected, Recount
+  - Approval List: Full table with type badge, title, submitter, date, priority, status, and actions
+  - Approval Detail Drawer: Right-side panel showing full approval details with discrepancy analysis
+  - Approval Actions Panel: Notes textarea and action buttons (Approve, Reject, Request Recount)
+  - Approval History Timeline: Chronological activity feed
+
+- **Approval Types**
+  - Stok Opname (Blue badge) - Stock opname submissions
+  - Penyesuaian (Amber badge) - Stock adjustments
+  - Task (Purple badge) - Task approvals
+
+- **Approval Status System**
+  - Pending (Amber) - Awaiting review
+  - Approved (Green) - Approved by reviewer
+  - Rejected (Red) - Rejected with notes
+  - Recount (Purple) - Requested for recount
+
+- **Approval Actions** (per design spec)
+  - Approve: Confirm submission and authorize downstream processing
+  - Reject: Send back with mandatory rejection reason
+  - Recount: Request partial or full recount of items
+
+- **Approval Center Functions** - Added JavaScript functions for Approval Center interactions
+  - `loadApprovalCenter()` - Initialize approval center on menu selection
+  - `renderApprovalList()` - Render approval list with filters
+  - `updateApprovalStats()` - Update approval count statistics
+  - `setApprovalFilter()` - Switch between pending/approved/rejected/recount tabs
+  - `filterApprovals()` - Filter approvals by search and type
+  - `openApprovalDetail()` / `closeApprovalDetail()` - Open/close approval detail drawer
+  - `approveItem()` - Approve an item
+  - `rejectItem()` - Reject an item with mandatory notes
+  - `recountItem()` - Request recount for an item
+
 #### Task Center
 - **New Task Center Page** - Built comprehensive task management center following wireframe from `task-center.md`
   - Task Center Header: Title, search bar, and create task button
@@ -140,7 +177,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Smooth transitions on all interactive elements
 
 ### Files Changed
-- `css/style.css` - Updated sidebar and header styles; Added admin, operator dashboard, and Task Center styles
-- `index.html` - Updated sidebar HTML structure; Added admin, operator dashboard, and Task Center sections; Updated auth state JavaScript
-- `js/dashboard.js` - Added admin, operator dashboard, and Task Center functions; Updated menu handling for role-based dashboard
+- `css/style.css` - Updated sidebar and header styles; Added admin, operator dashboard, Task Center, and Approval Center styles
+- `index.html` - Updated sidebar HTML structure; Added admin, operator dashboard, Task Center, and Approval Center sections; Updated auth state JavaScript
+- `js/dashboard.js` - Added admin, operator dashboard, Task Center, and Approval Center functions; Updated menu handling for role-based dashboard
 - `CHANGELOG.md` - Documented all changes
