@@ -158,12 +158,17 @@ def role_required(*roles):
         @jwt_required()
         def decorated_function(*args, **kwargs):
             try:
+                # Allow bypassing role checks via config for testing environments
+                from flask import current_app
+                if current_app.config.get('ALLOW_ALL_PERMISSIONS'):
+                    return f(*args, **kwargs)
+
                 claims = get_jwt()
                 user_role = claims.get('role')
-                
+
                 if user_role not in roles:
                     return jsonify({'error': 'Access denied. Required roles: ' + ', '.join(roles)}), 403
-                
+
                 return f(*args, **kwargs)
             except Exception as e:
                 return jsonify({'error': str(e)}), 403

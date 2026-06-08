@@ -73,6 +73,10 @@ class Config:
     # API versioning
     API_VERSION = 'v1'
     API_PREFIX = f'/api/{API_VERSION}'
+
+    # Development / testing helpers
+    # When true, role checks are bypassed (useful for rapid testing). Do NOT enable in production.
+    ALLOW_ALL_PERMISSIONS = os.environ.get('ALLOW_ALL_PERMISSIONS', 'false').lower() in ('1', 'true', 'yes')
     
     # Logging
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
@@ -116,11 +120,12 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     
-    # Required env vars in production
-    if not os.environ.get('SECRET_KEY'):
-        raise ValueError('SECRET_KEY must be set in production')
-    if not os.environ.get('JWT_SECRET_KEY'):
-        raise ValueError('JWT_SECRET_KEY must be set in production')
+    # Required env vars in production: defer checks until FLASK_ENV indicates production
+    if os.environ.get('FLASK_ENV') == 'production':
+        if not os.environ.get('SECRET_KEY'):
+            raise ValueError('SECRET_KEY must be set in production')
+        if not os.environ.get('JWT_SECRET_KEY'):
+            raise ValueError('JWT_SECRET_KEY must be set in production')
 
 
 # Config selector
