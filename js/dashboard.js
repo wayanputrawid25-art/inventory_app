@@ -5,9 +5,9 @@ let chartOutletStatus = null;
 let currentMenu = "penjualan";
 let selectedSalesOutlet = "";
 const MENU_STORAGE_KEY = "inventoryActiveMenu";
-const VALID_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter"];
+const VALID_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter"];
 const USER_ONLY_MENUS = ["opname"];
-const ADMIN_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter"];
+const ADMIN_MENUS = ["dashboard", "admin", "penjualan", "persediaan", "forecast", "opname", "taskcenter", "approvalcenter"];
 
 const state = {
   produkOptions: [],
@@ -108,6 +108,11 @@ const pageMeta = {
     eyebrow: "Task Management",
     title: "Task Center",
     caption: "Kelola dan lacak semua tugas operasional warehouse dalam satu tempat."
+  },
+  approvalcenter: {
+    eyebrow: "Review & Approval",
+    title: "Approval Center",
+    caption: "Tinjau dan approve submitted work dari counters dan operators."
   }
 };
 
@@ -795,6 +800,11 @@ function selectMenu(event, menu) {
   if (menu === "taskcenter") {
     document.getElementById("taskcenterTab").style.display = "block";
     loadTaskCenter();
+  }
+
+  if (menu === "approvalcenter") {
+    document.getElementById("approvalcenterTab").style.display = "block";
+    loadApprovalCenter();
   }
 }
 
@@ -3955,3 +3965,473 @@ function isOverdue(dateStr) {
 document.addEventListener("DOMContentLoaded", () => {
   // Task center data will be loaded when user selects the menu
 });
+
+/* ============================================
+   Approval Center Functions
+   ============================================ */
+
+const APPROVAL_TYPES = {
+  opname: { label: 'Stok Opname', class: 'approval-type-badge--opname' },
+  adjustment: { label: 'Penyesuaian', class: 'approval-type-badge--adjustment' },
+  task: { label: 'Task', class: 'approval-type-badge--task' }
+};
+
+const APPROVAL_STATUSES = {
+  pending: { label: 'Pending', class: 'approval-status-chip--pending' },
+  approved: { label: 'Approved', class: 'approval-status-chip--approved' },
+  rejected: { label: 'Rejected', class: 'approval-status-chip--rejected' },
+  recount: { label: 'Recount', class: 'approval-status-chip--recount' }
+};
+
+// Mock approval data
+const mockApprovals = [
+  {
+    id: 'APR-001',
+    type: 'opname',
+    title: 'Stok Opname Gudang Utama - Juni 2026',
+    description: 'Stock opname bulanan untuk periode Juni 2026. Total 145 SKU dihitung.',
+    submitter: { id: 'operator1', name: 'Budi Santoso', initials: 'BS' },
+    submittedAt: '2026-06-07 14:30',
+    priority: 'high',
+    status: 'pending',
+    discrepancy: {
+      sistem: 1250,
+      fisik: 1235,
+      selisih: -15
+    },
+    history: [
+      { action: 'submitted', user: 'Budi Santoso', time: '2 jam lalu' },
+      { action: 'assigned', user: 'System', time: '2 jam lalu' }
+    ]
+  },
+  {
+    id: 'APR-002',
+    type: 'adjustment',
+    title: 'Penyesuaian Stok Modul A',
+    description: 'Penyesuaian stok karena kerusakan barang saat pengiriman.',
+    submitter: { id: 'operator2', name: 'Siti Rahayu', initials: 'SR' },
+    submittedAt: '2026-06-07 10:15',
+    priority: 'medium',
+    status: 'pending',
+    discrepancy: {
+      sistem: 50,
+      fisik: 45,
+      selisih: -5
+    },
+    history: [
+      { action: 'submitted', user: 'Siti Rahayu', time: '6 jam lalu' },
+      { action: 'assigned', user: 'System', time: '6 jam lalu' }
+    ]
+  },
+  {
+    id: 'APR-003',
+    type: 'opname',
+    title: 'Stok Opname Rak A1 - Mei 2026',
+    description: 'Recount hasil opname Rak A1 setelah ditemukan discrepancy.',
+    submitter: { id: 'operator1', name: 'Budi Santoso', initials: 'BS' },
+    submittedAt: '2026-06-06 16:45',
+    priority: 'high',
+    status: 'recount',
+    discrepancy: {
+      sistem: 80,
+      fisik: 78,
+      selisih: -2
+    },
+    history: [
+      { action: 'recount requested', user: 'Admin', time: '1 hari lalu' },
+      { action: 'resubmitted', user: 'Budi Santoso', time: '1 hari lalu' },
+      { action: 'submitted', user: 'Budi Santoso', time: '2 hari lalu' }
+    ]
+  },
+  {
+    id: 'APR-004',
+    type: 'opname',
+    title: 'Stok Opname Gudang Timur - Juni 2026',
+    description: 'Stock opname gudang timur untuk periode Juni 2026.',
+    submitter: { id: 'operator3', name: 'Ahmad Wijaya', initials: 'AW' },
+    submittedAt: '2026-06-06 09:00',
+    priority: 'low',
+    status: 'pending',
+    discrepancy: {
+      sistem: 320,
+      fisik: 320,
+      selisih: 0
+    },
+    history: [
+      { action: 'submitted', user: 'Ahmad Wijaya', time: '1 hari lalu' },
+      { action: 'assigned', user: 'System', time: '1 hari lalu' }
+    ]
+  },
+  {
+    id: 'APR-005',
+    type: 'task',
+    title: 'Task: Update Stok Masuk',
+    description: 'Task untuk update data stok masuk dari supplier.',
+    submitter: { id: 'admin1', name: 'Admin', initials: 'AD' },
+    submittedAt: '2026-06-05 15:30',
+    priority: 'medium',
+    status: 'pending',
+    discrepancy: null,
+    history: [
+      { action: 'submitted for approval', user: 'Admin', time: '2 hari lalu' }
+    ]
+  },
+  {
+    id: 'APR-006',
+    type: 'opname',
+    title: 'Stok Opname Gudang Utara - Mei 2026',
+    description: 'Stock opname bulanan Mei 2026 untuk gudang utara.',
+    submitter: { id: 'operator2', name: 'Siti Rahayu', initials: 'SR' },
+    submittedAt: '2026-06-01 11:20',
+    priority: 'medium',
+    status: 'approved',
+    discrepancy: {
+      sistem: 450,
+      fisik: 448,
+      selisih: -2
+    },
+    history: [
+      { action: 'approved', user: 'Admin', time: '1 minggu lalu' },
+      { action: 'submitted', user: 'Siti Rahayu', time: '1 minggu lalu' }
+    ]
+  },
+  {
+    id: 'APR-007',
+    type: 'adjustment',
+    title: 'Penyesuaian Stok Tas B',
+    description: 'Penyesuaian karena barang kadaluarsa.',
+    submitter: { id: 'operator1', name: 'Budi Santoso', initials: 'BS' },
+    submittedAt: '2026-05-30 14:00',
+    priority: 'high',
+    status: 'rejected',
+    discrepancy: {
+      sistem: 100,
+      fisik: 85,
+      selisih: -15
+    },
+    history: [
+      { action: 'rejected', user: 'Admin', time: '2 minggu lalu' },
+      { action: 'submitted', user: 'Budi Santoso', time: '2 minggu lalu' }
+    ]
+  },
+  {
+    id: 'APR-008',
+    type: 'opname',
+    title: 'Stok Opname Gudang Barat - Mei 2026',
+    description: 'Stock opname bulanan Mei 2026 untuk gudang barat.',
+    submitter: { id: 'operator3', name: 'Ahmad Wijaya', initials: 'AW' },
+    submittedAt: '2026-05-29 10:30',
+    priority: 'low',
+    status: 'approved',
+    discrepancy: {
+      sistem: 280,
+      fisik: 280,
+      selisih: 0
+    },
+    history: [
+      { action: 'approved', user: 'Admin', time: '2 minggu lalu' },
+      { action: 'submitted', user: 'Ahmad Wijaya', time: '2 minggu lalu' }
+    ]
+  }
+];
+
+let currentApprovalFilter = 'pending';
+
+function loadApprovalCenter() {
+  renderApprovalList();
+  updateApprovalStats();
+}
+
+function renderApprovalList(filteredApprovals = mockApprovals) {
+  const approvalListBody = document.getElementById('approvalListBody');
+  const emptyState = document.getElementById('approvalEmptyState');
+  const listView = document.getElementById('approvalListView');
+  
+  if (!approvalListBody) return;
+
+  // Filter by current tab
+  let filtered = filteredApprovals;
+  if (currentApprovalFilter !== 'all') {
+    filtered = filteredApprovals.filter(a => a.status === currentApprovalFilter);
+  }
+
+  if (filtered.length === 0) {
+    listView.style.display = 'none';
+    emptyState.style.display = 'flex';
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  listView.style.display = 'block';
+  emptyState.style.display = 'none';
+
+  approvalListBody.innerHTML = filtered.map(approval => `
+    <div class="approval-row" onclick="openApprovalDetail('${approval.id}')">
+      <div>
+        <span class="approval-type-badge ${APPROVAL_TYPES[approval.type]?.class || ''}">${APPROVAL_TYPES[approval.type]?.label || approval.type}</span>
+      </div>
+      <div class="approval-row__title">
+        <i data-lucide="clipboard"></i>
+        <span>${escapeHtml(approval.title)}</span>
+      </div>
+      <div>
+        <div class="approval-submitter">
+          <div class="approval-submitter__avatar">${approval.submitter.initials}</div>
+          <span class="approval-submitter__name">${approval.submitter.name}</span>
+        </div>
+      </div>
+      <div>
+        <span class="approval-date">${formatDateTime(approval.submittedAt)}</span>
+      </div>
+      <div>
+        <span class="priority-badge priority-badge--${approval.priority}">${approval.priority.toUpperCase()}</span>
+      </div>
+      <div>
+        <span class="approval-status-chip ${APPROVAL_STATUSES[approval.status]?.class || ''}">${APPROVAL_STATUSES[approval.status]?.label || approval.status}</span>
+      </div>
+      <div class="approval-actions" onclick="event.stopPropagation()">
+        ${approval.status === 'pending' ? `
+          <button type="button" class="approval-action-btn approval-action-btn--approve" onclick="approveItem('${approval.id}')" title="Approve">
+            <i data-lucide="check"></i>
+          </button>
+          <button type="button" class="approval-action-btn approval-action-btn--reject" onclick="rejectItem('${approval.id}')" title="Reject">
+            <i data-lucide="x"></i>
+          </button>
+          <button type="button" class="approval-action-btn approval-action-btn--recount" onclick="recountItem('${approval.id}')" title="Recount">
+            <i data-lucide="refresh-cw"></i>
+          </button>
+        ` : `
+          <button type="button" class="approval-action-btn approval-action-btn--view" onclick="openApprovalDetail('${approval.id}')" title="View">
+            <i data-lucide="eye"></i>
+          </button>
+        `}
+      </div>
+    </div>
+  `).join('');
+
+  // Re-initialize Lucide icons
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
+function updateApprovalStats() {
+  const stats = {
+    total: mockApprovals.filter(a => a.status === 'pending').length,
+    urgent: mockApprovals.filter(a => a.status === 'pending' && a.priority === 'high').length,
+    opname: mockApprovals.filter(a => a.type === 'opname' && a.status === 'pending').length,
+    adjustment: mockApprovals.filter(a => a.type === 'adjustment' && a.status === 'pending').length,
+    approved: mockApprovals.filter(a => a.status === 'approved').length,
+    rejected: mockApprovals.filter(a => a.status === 'rejected').length,
+    recount: mockApprovals.filter(a => a.status === 'recount').length
+  };
+
+  document.getElementById('approvalCountTotal').textContent = stats.total;
+  document.getElementById('approvalCountUrgent').textContent = stats.urgent;
+  document.getElementById('approvalCountOpname').textContent = stats.opname;
+  document.getElementById('approvalCountAdjustment').textContent = stats.adjustment;
+  document.getElementById('approvalCountApproved').textContent = stats.approved;
+  document.getElementById('pendingCount').textContent = stats.total;
+  document.getElementById('approvedCount').textContent = stats.approved;
+  document.getElementById('rejectedCount').textContent = stats.rejected;
+  document.getElementById('recountCount').textContent = stats.recount;
+}
+
+function setApprovalFilter(filter) {
+  currentApprovalFilter = filter;
+  
+  // Update tab active state
+  document.querySelectorAll('.approval-filter-tab').forEach(tab => tab.classList.remove('active'));
+  document.querySelector(`.approval-filter-tab[onclick="setApprovalFilter('${filter}')"]`)?.classList.add('active');
+  
+  renderApprovalList();
+}
+
+function filterApprovals() {
+  const search = document.getElementById('approvalcenterSearch')?.value.toLowerCase() || '';
+  const typeFilter = document.getElementById('approvalTypeFilter')?.value || '';
+
+  const filtered = mockApprovals.filter(approval => {
+    const matchesSearch = approval.title.toLowerCase().includes(search) || approval.id.toLowerCase().includes(search);
+    const matchesType = !typeFilter || approval.type === typeFilter;
+
+    return matchesSearch && matchesType;
+  });
+
+  renderApprovalList(filtered);
+}
+
+function openApprovalDetail(approvalId) {
+  const approval = mockApprovals.find(a => a.id === approvalId);
+  if (!approval) return;
+
+  // Create or show drawer
+  let drawer = document.querySelector('.approval-detail-drawer');
+  if (!drawer) {
+    drawer = document.createElement('div');
+    drawer.className = 'approval-detail-drawer';
+    document.body.appendChild(drawer);
+  }
+
+  const discrepancyHtml = approval.discrepancy ? `
+    <div class="approval-discrepancy">
+      <p class="approval-discrepancy__title">Discrepancy Analysis</p>
+      <div class="approval-discrepancy__stats">
+        <div class="approval-discrepancy__stat">
+          <span class="approval-discrepancy__stat-value">${approval.discrepancy.sistem}</span>
+          <span class="approval-discrepancy__stat-label">Stok Sistem</span>
+        </div>
+        <div class="approval-discrepancy__stat">
+          <span class="approval-discrepancy__stat-value">${approval.discrepancy.fisik}</span>
+          <span class="approval-discrepancy__stat-label">Stok Fisik</span>
+        </div>
+        <div class="approval-discrepancy__stat">
+          <span class="approval-discrepancy__stat-value" style="color: ${approval.discrepancy.selisih < 0 ? 'var(--danger)' : 'var(--success)'}">${approval.discrepancy.selisih > 0 ? '+' : ''}${approval.discrepancy.selisih}</span>
+          <span class="approval-discrepancy__stat-label">Selisih</span>
+        </div>
+      </div>
+    </div>
+  ` : '';
+
+  const actionsPanelHtml = approval.status === 'pending' ? `
+    <div class="approval-actions-panel">
+      <div class="approval-actions-panel__notes">
+        <label for="approvalNotes">Catatan Review</label>
+        <textarea id="approvalNotes" placeholder="Tambahkan catatan untuk approval ini..."></textarea>
+      </div>
+      <div class="approval-actions-panel__buttons">
+        <button type="button" class="btn-secondary" onclick="rejectItem('${approval.id}')" style="background: var(--danger); color: #fff;">Reject</button>
+        <button type="button" class="btn-secondary" onclick="recountItem('${approval.id}')" style="background: #8b5cf6; color: #fff;">Request Recount</button>
+        <button type="button" class="btn-primary" onclick="approveItem('${approval.id}')">Approve</button>
+      </div>
+    </div>
+  ` : '';
+
+  drawer.innerHTML = `
+    <div class="approval-detail-drawer__header">
+      <h3>${escapeHtml(approval.id)}</h3>
+      <button type="button" class="approval-detail-drawer__close" onclick="closeApprovalDetail()">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="approval-detail-drawer__body">
+      <div class="approval-detail-section">
+        <h4>Detail Approval</h4>
+        <div class="approval-detail-meta">
+          <div class="approval-detail-item">
+            <span class="approval-detail-item__label">Tipe</span>
+            <span class="approval-type-badge ${APPROVAL_TYPES[approval.type]?.class || ''}">${APPROVAL_TYPES[approval.type]?.label || approval.type}</span>
+          </div>
+          <div class="approval-detail-item">
+            <span class="approval-detail-item__label">Status</span>
+            <span class="approval-status-chip ${APPROVAL_STATUSES[approval.status]?.class || ''}">${APPROVAL_STATUSES[approval.status]?.label || approval.status}</span>
+          </div>
+          <div class="approval-detail-item">
+            <span class="approval-detail-item__label">Submitter</span>
+            <span class="approval-detail-item__value">${approval.submitter.name}</span>
+          </div>
+          <div class="approval-detail-item">
+            <span class="approval-detail-item__label">Priority</span>
+            <span class="priority-badge priority-badge--${approval.priority}">${approval.priority.toUpperCase()}</span>
+          </div>
+          <div class="approval-detail-item">
+            <span class="approval-detail-item__label">Submitted</span>
+            <span class="approval-detail-item__value">${formatDateTime(approval.submittedAt)}</span>
+          </div>
+        </div>
+      </div>
+      <div class="approval-detail-section">
+        <h4>Judul</h4>
+        <p class="task-detail-description">${escapeHtml(approval.title)}</p>
+      </div>
+      <div class="approval-detail-section">
+        <h4>Deskripsi</h4>
+        <p class="task-detail-description">${escapeHtml(approval.description)}</p>
+      </div>
+      ${discrepancyHtml}
+      <div class="approval-detail-section">
+        <h4>History</h4>
+        <div class="approval-timeline">
+          ${approval.history.map(h => `
+            <div class="approval-timeline-item">
+              <div class="approval-timeline-item__icon"></div>
+              <div class="approval-timeline-item__content">
+                <p class="approval-timeline-item__text"><strong>${h.user}</strong> ${h.action}</p>
+                <p class="approval-timeline-item__time">${h.time}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+    ${actionsPanelHtml}
+  `;
+
+  drawer.classList.add('open');
+  
+  // Re-initialize Lucide icons
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
+function closeApprovalDetail() {
+  const drawer = document.querySelector('.approval-detail-drawer');
+  if (drawer) {
+    drawer.classList.remove('open');
+  }
+}
+
+function approveItem(approvalId) {
+  const approval = mockApprovals.find(a => a.id === approvalId);
+  if (!approval) return;
+
+  approval.status = 'approved';
+  approval.history.unshift({
+    action: 'approved',
+    user: getCurrentUserRole() === 'admin' ? 'Admin' : 'Reviewer',
+    time: 'baru saja'
+  });
+
+  closeApprovalDetail();
+  loadApprovalCenter();
+  showToast(`Approval ${approvalId} berhasil disetujui`, true);
+}
+
+function rejectItem(approvalId) {
+  const approval = mockApprovals.find(a => a.id === approvalId);
+  if (!approval) return;
+
+  const notes = document.getElementById('approvalNotes')?.value;
+  if (!notes) {
+    showToast('Harap isi alasan penolakan', false);
+    return;
+  }
+
+  approval.status = 'rejected';
+  approval.history.unshift({
+    action: `rejected: ${notes}`,
+    user: getCurrentUserRole() === 'admin' ? 'Admin' : 'Reviewer',
+    time: 'baru saja'
+  });
+
+  closeApprovalDetail();
+  loadApprovalCenter();
+  showToast(`Approval ${approvalId} ditolak`, true);
+}
+
+function recountItem(approvalId) {
+  const approval = mockApprovals.find(a => a.id === approvalId);
+  if (!approval) return;
+
+  approval.status = 'recount';
+  approval.history.unshift({
+    action: 'recount requested',
+    user: getCurrentUserRole() === 'admin' ? 'Admin' : 'Reviewer',
+    time: 'baru saja'
+  });
+
+  closeApprovalDetail();
+  loadApprovalCenter();
+  showToast(`Recount diminta untuk ${approvalId}`, true);
+}
