@@ -770,22 +770,32 @@ button:hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 18px;
+  gap: 10px;
+  padding: 18px 12px;
   border-radius: 14px;
-  background: var(--surface-strong);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
   color: var(--text);
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255,255,255,0.04);
   font-weight: 800;
   text-align: center;
   cursor: pointer;
+  transition: transform 220ms cubic-bezier(.2,.9,.3,1), box-shadow 220ms ease, border-color 220ms ease;
 }
-.quick-tile i { width:28px;height:28px }
-.quick-tile span{ font-size:13px }
-.quick-tile.tile-green { background: linear-gradient(180deg, rgba(52,199,89,0.06), rgba(52,199,89,0.02)); border-color: rgba(52,199,89,0.12); }
-.quick-tile.tile-blue  { background: linear-gradient(180deg, rgba(37,99,235,0.06), rgba(37,99,235,0.02)); border-color: rgba(37,99,235,0.12); }
-.quick-tile.tile-orange{ background: linear-gradient(180deg, rgba(243,166,93,0.06), rgba(243,166,93,0.02)); border-color: rgba(243,166,93,0.12); }
-.quick-tile.tile-purple{ background: linear-gradient(180deg, rgba(168,85,247,0.06), rgba(168,85,247,0.02)); border-color: rgba(168,85,247,0.12); }
+.quick-tile .icon-wrap{
+  width:56px;
+  height:56px;
+  border-radius:12px;
+  display:grid;
+  place-items:center;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.02);
+}
+.quick-tile i { width:26px;height:26px }
+.quick-tile span{ font-size:13px; display:block; max-width:120px }
+.quick-tile.tile-green { background: linear-gradient(180deg, rgba(52,199,89,0.04), rgba(52,199,89,0.01)); border-color: rgba(52,199,89,0.12); }
+.quick-tile.tile-blue  { background: linear-gradient(180deg, rgba(37,99,235,0.04), rgba(37,99,235,0.01)); border-color: rgba(37,99,235,0.12); }
+.quick-tile.tile-orange{ background: linear-gradient(180deg, rgba(243,166,93,0.04), rgba(243,166,93,0.01)); border-color: rgba(243,166,93,0.12); }
+.quick-tile.tile-purple{ background: linear-gradient(180deg, rgba(168,85,247,0.04), rgba(168,85,247,0.01)); border-color: rgba(168,85,247,0.12); }
 
 /* Login modal */
 .login-modal {
