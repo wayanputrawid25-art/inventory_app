@@ -1,6 +1,16 @@
 # Main Flask Application
 import os
 import logging
+import pkgutil
+# Compatibility shim: some Python versions remove pkgutil.get_loader.
+# Provide a fallback using importlib.spec if missing so Flask can locate packages.
+if not hasattr(pkgutil, 'get_loader'):
+    import importlib.util
+    def _compat_get_loader(name):
+        spec = importlib.util.find_spec(name)
+        return None if spec is None else spec.loader
+    pkgutil.get_loader = _compat_get_loader
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
