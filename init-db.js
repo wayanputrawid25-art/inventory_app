@@ -4,11 +4,16 @@ import path from 'path';
 
 const SAFE_SCHEMA = path.resolve('./migration_neon_safe.sql');
 const PERINTAH_SCHEMA = path.resolve('./migration_opname_perintah.sql');
+const AUTH_SCHEMA = path.resolve('./migration_auth_login.sql');
 const DEFAULT_SCHEMA = path.resolve('./schema.sql');
 
 async function initDB() {
   try {
     console.log('Initializing database...');
+
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL belum di-set. Isi connection string PostgreSQL/Neon sebelum menjalankan npm run init-db.');
+    }
 
     const schemaFile = fs.existsSync(SAFE_SCHEMA) ? SAFE_SCHEMA : DEFAULT_SCHEMA;
     console.log(`Using schema file: ${schemaFile}`);
@@ -37,9 +42,16 @@ async function initDB() {
       console.log('Perintah SO schema applied.');
     }
 
+    if (fs.existsSync(AUTH_SCHEMA)) {
+      const authSql = fs.readFileSync(AUTH_SCHEMA, 'utf8');
+      await pool.query(authSql);
+      console.log('Auth/login schema and default users applied.');
+    }
+
     console.log('Database initialized successfully! No existing data was deleted.');
   } catch (err) {
     console.error('Error initializing database:', err);
+    process.exitCode = 1;
   } finally {
     await pool.end();
   }

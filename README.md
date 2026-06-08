@@ -136,6 +136,38 @@ GitHub setup:
 
 > GitHub push saja tidak mengubah Neon; workflow harus dijalankan atau di-trigger agar schema sinkron.
 
+
+### 2.7. Menyesuaikan database PostgreSQL/Neon agar SQL dan login berjalan
+
+Frontend dan API Node.js membaca database dari environment variable `DATABASE_URL`. Setelah database Neon/PostgreSQL dibuat, jalankan sinkronisasi schema aman berikut dari root repo:
+
+```bash
+npm install
+export DATABASE_URL="postgresql://USER:PASSWORD@HOST.neon.tech/DBNAME?sslmode=require"
+npm run init-db
+npm start
+```
+
+Di Windows PowerShell:
+
+```powershell
+$env:DATABASE_URL="postgresql://USER:PASSWORD@HOST.neon.tech/DBNAME?sslmode=require"
+npm run init-db
+npm start
+```
+
+`npm run init-db` menjalankan `migration_neon_safe.sql`, `migration_opname_perintah.sql`, dan `migration_auth_login.sql` secara idempotent, jadi aman dijalankan ulang tanpa menghapus data. Migration auth membuat tabel `users` jika belum ada dan menyiapkan akun default:
+
+| Portal | Username | Password | Role |
+|--------|----------|----------|------|
+| Admin | `admin` | `admin123` | `admin` |
+| User Operasional | `checker` | `checker123` | `checker_opname` |
+
+Jika login masih gagal, pastikan:
+1. `DATABASE_URL` sudah tersedia di terminal/server yang menjalankan `npm start`.
+2. `npm run init-db` selesai dengan log `Auth/login schema and default users applied.`
+3. Masuk admin melalui tab **Admin**, dan akun `checker` melalui tab **User Operasional**.
+
 ### 3. Run Flask Server
 
 ```bash

@@ -2585,7 +2585,7 @@ body.auth-locked .auth-gate {
   min-height: 48px;
 }
 body:not(.auth-locked) .auth-gate {
-  display: none;
+  display: none !important;
 }
 
 @media (max-width: 960px) {
