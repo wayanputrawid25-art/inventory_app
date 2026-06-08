@@ -5,7 +5,8 @@ let chartOutletStatus = null;
 let currentMenu = "penjualan";
 let selectedSalesOutlet = "";
 const MENU_STORAGE_KEY = "inventoryActiveMenu";
-const VALID_MENUS = ["penjualan", "audit", "persediaan", "forecast", "opname"];
+const VALID_MENUS = ["penjualan", "persediaan", "forecast", "opname"];
+const USER_ONLY_MENUS = ["opname"];
 
 const state = {
   produkOptions: [],
@@ -35,6 +36,36 @@ const state = {
   activePerintah: null,
   opnameHistory: []
 };
+
+
+function getStoredAuth() {
+  try {
+    return JSON.parse(window.localStorage.getItem('auth_user') || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function isAuthenticated() {
+  return Boolean(getStoredAuth()?.access_token);
+}
+
+function getCurrentUserRole() {
+  return getStoredAuth()?.role || null;
+}
+
+function getAllowedMenus() {
+  if (!isAuthenticated()) return [];
+  return getCurrentUserRole() === 'admin' ? VALID_MENUS : USER_ONLY_MENUS;
+}
+
+function getDefaultMenuForRole() {
+  return getCurrentUserRole() === 'admin' ? 'penjualan' : 'opname';
+}
+
+function canAccessMenu(menu) {
+  return getAllowedMenus().includes(menu);
+}
 
 const pageMeta = {
   penjualan: {
@@ -73,16 +104,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   selectImport(null, "penjualan");
   selectPersediaanInput(null, "pembelian");
   selectPersediaanImport(null, "pembelian");
-  await loadProdukOptions();
-  await loadAuditOutletOptions();
-  await buildDynamicMenu();
   initOpnameQtyModal();
+
+  if (!isAuthenticated()) {
+    window.applyAuthState?.();
+    return;
+  }
+
+  await loadProdukOptions();
+  window.applyAuthState?.();
   selectMenu(null, getSavedMenu());
 });
 
 function getSavedMenu() {
   const savedMenu = window.localStorage.getItem(MENU_STORAGE_KEY);
-  return VALID_MENUS.includes(savedMenu) ? savedMenu : "penjualan";
+  return canAccessMenu(savedMenu) ? savedMenu : getDefaultMenuForRole();
 }
 
 function toggleMobileMenu() {
@@ -252,8 +288,17 @@ function escapeHtml(value = "") {
     .replaceAll("'", "&#39;");
 }
 
-async function fetchJson(url, options) {
-  const response = await fetch(url, options);
+function getAuthHeaders() {
+  const auth = getStoredAuth();
+  return auth?.access_token ? { Authorization: `Bearer ${auth.access_token}` } : {};
+}
+
+async function fetchJson(url, options = {}) {
+  const headers = {
+    ...getAuthHeaders(),
+    ...(options.headers || {})
+  };
+  const response = await fetch(url, { ...options, headers });
   const text = await response.text();
   let data = null;
 
@@ -264,7 +309,7 @@ async function fetchJson(url, options) {
   }
 
   if (!response.ok) {
-    throw new Error(data?.error || `HTTP ${response.status}`);
+    throw new Error(data?.message || data?.error || `HTTP ${response.status}`);
   }
 
   if (data && typeof data === 'object' && data.hasOwnProperty('success')) {
@@ -647,7 +692,15 @@ function showOpnameTab(event, id) {
 }
 
 function selectMenu(event, menu) {
-  if (!VALID_MENUS.includes(menu)) menu = "penjualan";
+  if (!isAuthenticated()) {
+    window.applyAuthState?.();
+    return;
+  }
+  if (!VALID_MENUS.includes(menu)) menu = getDefaultMenuForRole();
+  if (!canAccessMenu(menu)) {
+    showToast('Akses user hanya untuk Stok Opname', false);
+    menu = getDefaultMenuForRole();
+  }
   currentMenu = menu;
   window.localStorage.setItem(MENU_STORAGE_KEY, menu);
   closeMobileMenu();

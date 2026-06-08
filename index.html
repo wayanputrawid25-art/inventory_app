@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/css/style.css?v=dark-red-20260521b">
   <link rel="icon" type="image/png" href="/assets/logo.png">
 </head>
-<body>
+<body class="auth-locked">
   <header class="app-header">
     <div class="header-left">
       <button class="mobile-menu-toggle" type="button" onclick="toggleMobileMenu()" aria-label="Buka menu">
@@ -16,28 +16,62 @@
       <div class="brand">CV EPIC Warehouse</div>
     </div>
     <div class="header-right">
-      <button class="btn-secondary" onclick="openLogin()">Masuk</button>
+      <span id="authUserBadge" class="auth-user-badge" style="display:none;"></span>
+      <button id="logoutButton" class="btn-secondary" onclick="performLogout()" style="display:none;">Keluar</button>
+      <button id="loginButton" class="btn-secondary" onclick="openLogin('user')">Masuk</button>
     </div>
   </header>
-  <!-- Login modal -->
-  <div id="loginModal" class="login-modal" style="display:none;">
-    <div class="login-panel">
-      <h3>Masuk ke Dashboard</h3>
-      <p class="page-caption">Masuk dengan akun Anda untuk melihat laporan dan melakukan tindakan.</p>
-      <label class="filter-control">
-        <span>Username</span>
-        <input type="text" id="loginUsername" placeholder="Username">
-      </label>
-      <label class="filter-control">
-        <span>Password</span>
-        <input type="password" id="loginPassword" placeholder="Password">
-      </label>
-      <div style="display:flex;gap:10px;margin-top:12px;justify-content:flex-end;">
-        <button class="btn-secondary" onclick="closeLogin()">Batal</button>
-        <button class="btn-primary" onclick="performLogin()">Masuk</button>
+  <section id="authGate" class="auth-gate" aria-label="Halaman login CV EPIC Warehouse">
+    <div class="auth-gate__shell">
+      <div class="auth-hero-panel">
+        <div class="auth-brand-mark">
+          <img src="/assets/logo.png" alt="CV EPIC Warehouse">
+          <div>
+            <p>CV EPIC Warehouse</p>
+            <h1>Inventory Control Suite</h1>
+          </div>
+        </div>
+        <div class="auth-hero-copy">
+          <p class="section-eyebrow">Secure Warehouse Portal</p>
+          <h2>Sistem inventory profesional dengan akses terpisah untuk Admin dan User Opname.</h2>
+          <p>Admin mengelola seluruh dashboard, persediaan, forecast, dan stok opname. User operasional hanya masuk ke modul stok opname agar proses hitung fisik tetap fokus dan aman.</p>
+        </div>
+        <div class="auth-capability-grid">
+          <div><strong>Admin</strong><span>Akses semua modul</span></div>
+          <div><strong>User</strong><span>Stok opname saja</span></div>
+          <div><strong>Audit</strong><span>Sesi & role terpisah</span></div>
+        </div>
+      </div>
+
+      <div id="loginModal" class="login-panel auth-login-card">
+        <p class="section-eyebrow">Login Portal</p>
+        <h3>Masuk ke Sistem</h3>
+        <p class="page-caption" id="loginModeCaption">Pilih akses user untuk operasional stok opname atau admin untuk kontrol penuh.</p>
+        <div class="login-mode-tabs" role="tablist" aria-label="Pilihan akses login">
+          <button type="button" id="loginModeUser" class="active-tab" onclick="setLoginMode('user')">
+            <i data-lucide="clipboard-check"></i>
+            <span>User Opname</span>
+          </button>
+          <button type="button" id="loginModeAdmin" onclick="setLoginMode('admin')">
+            <i data-lucide="shield-check"></i>
+            <span>Admin</span>
+          </button>
+        </div>
+        <div class="auth-mode-note" id="authModeNote">User hanya mendapat akses modul stok opname.</div>
+        <label class="filter-control">
+          <span>Username</span>
+          <input type="text" id="loginUsername" placeholder="Masukkan username" autocomplete="username">
+        </label>
+        <label class="filter-control">
+          <span>Password</span>
+          <input type="password" id="loginPassword" placeholder="Masukkan password" autocomplete="current-password" onkeydown="if(event.key==='Enter'){event.preventDefault();performLogin();}">
+        </label>
+        <div class="login-actions">
+          <button class="btn-primary auth-submit" onclick="performLogin()">Masuk ke Dashboard</button>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
   <button type="button" class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Buka menu">
     <i data-lucide="menu"></i>
   </button>
@@ -53,20 +87,20 @@
     </div>
 
     <ul>
-      <li onclick="selectMenu(event,'penjualan')" class="active">
+      <li data-menu="penjualan" onclick="selectMenu(event,'penjualan')" class="active">
         <i data-lucide="bar-chart-3"></i>
         <span>Penjualan</span>
       </li>
       <!-- Audit menu removed per redesign request -->
-      <li onclick="selectMenu(event,'persediaan')">
+      <li data-menu="persediaan" onclick="selectMenu(event,'persediaan')">
         <i data-lucide="boxes"></i>
         <span>Persediaan</span>
       </li>
-      <li onclick="selectMenu(event,'forecast')">
+      <li data-menu="forecast" onclick="selectMenu(event,'forecast')">
         <i data-lucide="trending-up"></i>
         <span>Forecasting</span>
       </li>
-      <li onclick="selectMenu(event,'opname')">
+      <li data-menu="opname" onclick="selectMenu(event,'opname')">
         <i data-lucide="package-check"></i>
         <span>Stok Opname</span>
       </li>
@@ -121,35 +155,21 @@
       </div>
     </section>
 
-    <!-- Quick main menu tiles (per desain baru) -->
+    <!-- Quick main menu tiles: hanya modul yang benar-benar tersedia -->
     <div class="card" id="mainQuickMenu">
-      <h3>Menu Cepat</h3>
+      <div class="section-header">
+        <div>
+          <p class="section-eyebrow">Navigasi Utama</p>
+          <h3>Menu Cepat</h3>
+        </div>
+      </div>
+      <p class="page-caption">Tombol berikut diarahkan ke modul yang sudah memiliki layar dan proses data aktif.</p>
       <div class="quick-menu-section">
-        <h4 class="quick-group">Penjualan</h4>
         <div class="quick-menu-grid">
-          <button class="quick-tile tile-green" onclick="selectMenu(null,'penjualan')" aria-label="Penjualan" tabindex="0"><div class="icon-wrap"><img src="/static/icons/icon-penjualan.svg" alt="" class="tile-svg-icon"></div><span>Penjualan</span></button>
-          <button class="quick-tile tile-green" onclick="selectMenu(null,'pembelian')" aria-label="Pembelian" tabindex="0"><div class="icon-wrap"><img src="/static/icons/icon-pembelian.svg" alt="" class="tile-svg-icon"></div><span>Pembelian</span></button>
-          <button class="quick-tile tile-green" onclick="selectMenu(null,'pengiriman')" aria-label="Pengiriman" tabindex="0"><div class="icon-wrap"><i data-lucide="truck"></i></div><span>Pengiriman</span></button>
-          <button class="quick-tile tile-green" onclick="selectMenu(null,'uang-muka')" aria-label="Uang Muka" tabindex="0"><div class="icon-wrap"><img src="/static/icons/icon-wallet.svg" alt="" class="tile-svg-icon"></div><span>Uang Muka</span></button>
-          <button class="quick-tile tile-green" onclick="selectMenu(null,'faktur')" aria-label="Faktur" tabindex="0"><div class="icon-wrap"><i data-lucide="file-text"></i></div><span>Faktur</span></button>
-        </div>
-
-        <h4 class="quick-group">Pelanggan & Kategori</h4>
-        <div class="quick-menu-grid">
-          <button class="quick-tile tile-blue" onclick="selectMenu(null,'penerimaan')"><div class="icon-wrap"><i data-lucide="inbox"></i></div><span>Penerimaan</span></button>
-          <button class="quick-tile tile-blue" onclick="selectMenu(null,'retur')"><div class="icon-wrap"><i data-lucide="corner-up-left"></i></div><span>Retur</span></button>
-          <button class="quick-tile tile-blue" onclick="selectMenu(null,'kategori-pelanggan')"><div class="icon-wrap"><i data-lucide="users"></i></div><span>Kategori Pelanggan</span></button>
-          <button class="quick-tile tile-blue" onclick="selectMenu(null,'kategori-penjualan')"><div class="icon-wrap"><i data-lucide="tag"></i></div><span>Kategori Penjualan</span></button>
-          <button class="quick-tile tile-blue" onclick="selectMenu(null,'pelanggan')"><div class="icon-wrap"><i data-lucide="user"></i></div><span>Pelanggan</span></button>
-        </div>
-
-        <h4 class="quick-group">Operasional</h4>
-        <div class="quick-menu-grid">
-          <button class="quick-tile tile-orange" onclick="selectMenu(null,'penyesuaian-harga')"><div class="icon-wrap"><i data-lucide="percent"></i></div><span>Penyesuaian Harga</span></button>
-          <button class="quick-tile tile-orange" onclick="selectMenu(null,'komisi')"><div class="icon-wrap"><i data-lucide="award"></i></div><span>Komisi Penjual</span></button>
-          <button class="quick-tile tile-orange" onclick="selectMenu(null,'target')"><div class="icon-wrap"><i data-lucide="target"></i></div><span>Target Penjualan</span></button>
-          <button class="quick-tile tile-orange" onclick="selectMenu(null,'smartlink')"><div class="icon-wrap"><i data-lucide="link-2"></i></div><span>SmartLink e-Commerce</span></button>
-          <button class="quick-tile tile-purple" onclick="selectMenu(null,'checkin')"><div class="icon-wrap"><i data-lucide="map-pin"></i></div><span>Check In</span></button>
+          <button class="quick-tile tile-green" data-menu="penjualan" onclick="selectMenu(null,'penjualan')" aria-label="Dashboard Penjualan" tabindex="0"><div class="icon-wrap"><img src="/static/icons/icon-penjualan.svg" alt="" class="tile-svg-icon"></div><span>Penjualan</span></button>
+          <button class="quick-tile tile-blue" data-menu="persediaan" onclick="selectMenu(null,'persediaan')" aria-label="Persediaan Warehouse" tabindex="0"><div class="icon-wrap"><i data-lucide="boxes"></i></div><span>Persediaan</span></button>
+          <button class="quick-tile tile-orange" data-menu="forecast" onclick="selectMenu(null,'forecast')" aria-label="Forecast Penjualan" tabindex="0"><div class="icon-wrap"><i data-lucide="trending-up"></i></div><span>Forecasting</span></button>
+          <button class="quick-tile tile-purple" data-menu="opname" onclick="selectMenu(null,'opname')" aria-label="Stok Opname" tabindex="0"><div class="icon-wrap"><img src="/static/icons/icon-opname.svg" alt="" class="tile-svg-icon"></div><span>Stok Opname</span></button>
         </div>
       </div>
     </div>
@@ -208,32 +228,6 @@
         </div>
       </div>
     </section>
-
-    <!-- Inventory quick menu -->
-    <div class="card" id="inventoryQuickMenu" style="margin-top:18px;">
-      <h3>Persediaan & Gudang</h3>
-      <div class="quick-menu-section">
-        <div class="quick-menu-grid">
-          <button class="quick-tile tile-green" onclick="selectMenu(null,'permintaan')" aria-label="Permintaan Barang" tabindex="0"><div class="icon-wrap"><i data-lucide="plus-square"></i></div><span>Permintaan Barang</span></button>
-          <button class="quick-tile tile-green" onclick="selectMenu(null,'pemindahan')" aria-label="Pemindahan Barang" tabindex="0"><div class="icon-wrap"><i data-lucide="move"></i></div><span>Pemindahan Barang</span></button>
-          <button class="quick-tile tile-green" onclick="selectMenu(null,'penyesuaian')" aria-label="Penyesuaian Persediaan" tabindex="0"><div class="icon-wrap"><i data-lucide="sliders"></i></div><span>Penyesuaian Persediaan</span></button>
-          <button class="quick-tile tile-green" onclick="selectMenu(null,'pemesanan')" aria-label="Pekerjaan Pesanan" tabindex="0"><div class="icon-wrap"><i data-lucide="clipboard-list"></i></div><span>Pekerjaan Pesanan</span></button>
-          <button class="quick-tile tile-green" onclick="selectMenu(null,'bahan-baku')" aria-label="Penambahan Bahan Baku" tabindex="0"><div class="icon-wrap"><i data-lucide="package"></i></div><span>Penambahan Bahan Baku</span></button>
-
-          <button class="quick-tile tile-blue" onclick="selectMenu(null,'perintah-opname')" aria-label="Perintah Stok Opname" tabindex="0"><div class="icon-wrap"><img src="/static/icons/icon-opname.svg" alt="" class="tile-svg-icon"></div><span>Perintah Stok Opname</span></button>
-          <button class="quick-tile tile-blue" onclick="selectMenu(null,'hasil-opname')" aria-label="Hasil Stok Opname" tabindex="0"><div class="icon-wrap"><i data-lucide="file-text"></i></div><span>Hasil Stok Opname</span></button>
-          <button class="quick-tile tile-blue" onclick="selectMenu(null,'barang-jasa')" aria-label="Barang dan Jasa" tabindex="0"><div class="icon-wrap"><img src="/static/icons/icon-barang.svg" alt="" class="tile-svg-icon"></div><span>Barang & Jasa</span></button>
-          <button class="quick-tile tile-blue" onclick="selectMenu(null,'gudang')" aria-label="Gudang" tabindex="0"><div class="icon-wrap"><i data-lucide="home"></i></div><span>Gudang</span></button>
-          <button class="quick-tile tile-blue" onclick="selectMenu(null,'satuan')" aria-label="Satuan Barang" tabindex="0"><div class="icon-wrap"><i data-lucide="hash"></i></div><span>Satuan Barang</span></button>
-
-          <button class="quick-tile tile-orange" onclick="selectMenu(null,'kategori-barang')" aria-label="Kategori Barang" tabindex="0"><div class="icon-wrap"><i data-lucide="grid"></i></div><span>Kategori Barang</span></button>
-          <button class="quick-tile tile-orange" onclick="selectMenu(null,'merek')" aria-label="Merek Barang" tabindex="0"><div class="icon-wrap"><i data-lucide="tag"></i></div><span>Merek Barang</span></button>
-          <button class="quick-tile tile-orange" onclick="selectMenu(null,'pemenuhan')" aria-label="Pemenuhan Pesanan" tabindex="0"><div class="icon-wrap"><i data-lucide="truck"></i></div><span>Pemenuhan Pesanan</span></button>
-          <button class="quick-tile tile-orange" onclick="selectMenu(null,'per-gudang')" aria-label="Barang per Gudang" tabindex="0"><div class="icon-wrap"><i data-lucide="warehouse"></i></div><span>Barang per Gudang</span></button>
-          <button class="quick-tile tile-purple" onclick="selectMenu(null,'stok-minimum')" aria-label="Stok Minimum" tabindex="0"><div class="icon-wrap"><i data-lucide="alert-triangle"></i></div><span>Barang Stok Minimum</span></button>
-        </div>
-      </div>
-    </div>
 
     <section id="chartTab" class="tab-content" style="display:none;">
       <div class="grid-2">
@@ -1058,23 +1052,92 @@
     lucide.createIcons();
   </script>
   <script>
-    function openLogin() {
-      document.getElementById('loginModal').style.display = 'grid';
+    let loginMode = 'user';
+
+    function setLoginMode(mode) {
+      loginMode = mode === 'admin' ? 'admin' : 'user';
+      document.getElementById('loginModeUser')?.classList.toggle('active-tab', loginMode === 'user');
+      document.getElementById('loginModeAdmin')?.classList.toggle('active-tab', loginMode === 'admin');
+      const caption = document.getElementById('loginModeCaption');
+      const note = document.getElementById('authModeNote');
+      if (caption) {
+        caption.textContent = loginMode === 'admin'
+          ? 'Portal admin memberi akses penuh ke penjualan, persediaan, forecasting, dan stok opname.'
+          : 'Portal user khusus untuk pekerjaan stok opname.';
+      }
+      if (note) {
+        note.textContent = loginMode === 'admin'
+          ? 'Admin mempunyai akses semua modul sesuai migrasi database yang aktif.'
+          : 'User hanya mendapat akses modul stok opname.';
+      }
     }
+
+    function applyRoleNavigation() {
+      const auth = getStoredAuth();
+      const isAdmin = auth?.role === 'admin';
+      const allowedMenus = isAdmin ? ['penjualan', 'persediaan', 'forecast', 'opname'] : ['opname'];
+      document.querySelectorAll('[data-menu]').forEach((item) => {
+        const menu = item.getAttribute('data-menu');
+        item.style.display = allowedMenus.includes(menu) ? '' : 'none';
+      });
+      const quickMenu = document.getElementById('mainQuickMenu');
+      if (quickMenu) quickMenu.style.display = isAdmin ? '' : 'none';
+    }
+
+    function updateAuthHeader() {
+      const auth = getStoredAuth();
+      const badge = document.getElementById('authUserBadge');
+      const loginButton = document.getElementById('loginButton');
+      const logoutButton = document.getElementById('logoutButton');
+      if (auth?.access_token) {
+        const roleLabel = auth.role === 'admin' ? 'Admin' : 'User Opname';
+        if (badge) {
+          badge.textContent = `${auth.nama_lengkap || auth.username} · ${roleLabel}`;
+          badge.style.display = 'inline-flex';
+        }
+        if (loginButton) loginButton.style.display = 'none';
+        if (logoutButton) logoutButton.style.display = 'inline-flex';
+      } else {
+        if (badge) badge.style.display = 'none';
+        if (loginButton) loginButton.style.display = 'inline-flex';
+        if (logoutButton) logoutButton.style.display = 'none';
+      }
+    }
+
+    function applyAuthState() {
+      const auth = getStoredAuth();
+      const locked = !auth?.access_token;
+      document.body.classList.toggle('auth-locked', locked);
+      updateAuthHeader();
+      if (locked) {
+        setLoginMode(loginMode || 'user');
+        setTimeout(() => document.getElementById('loginUsername')?.focus(), 80);
+        return;
+      }
+      applyRoleNavigation();
+    }
+
+    function openLogin(mode = 'user') {
+      setLoginMode(mode);
+      document.body.classList.add('auth-locked');
+      setTimeout(() => document.getElementById('loginUsername')?.focus(), 50);
+    }
+
     function closeLogin() {
-      document.getElementById('loginModal').style.display = 'none';
+      if (getStoredAuth()?.access_token) document.body.classList.remove('auth-locked');
     }
 
     async function performLogin() {
-      const user = document.getElementById('loginUsername').value;
+      const user = document.getElementById('loginUsername').value.trim();
       const pass = document.getElementById('loginPassword').value;
       if (!user || !pass) {
-        alert('Masukkan username dan password');
+        showToast('Masukkan username dan password', false);
         return;
       }
 
+      const endpoint = loginMode === 'admin' ? '/api/v1/auth/login/admin' : '/api/v1/auth/login/user';
       try {
-        const res = await fetch('/api/v1/auth/login', {
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: user, password: pass })
@@ -1085,23 +1148,45 @@
           return;
         }
 
-        // Expect tokens or user data in response
-        window.localStorage.setItem('auth_user', JSON.stringify(data.data || data));
-        showToast('Login berhasil', true);
-        closeLogin();
-        // Trigger refresh of current view
-        applyCurrentFilters();
+        const authData = data.data || data;
+        window.localStorage.setItem('auth_user', JSON.stringify(authData));
+        document.getElementById('loginPassword').value = '';
+        applyAuthState();
+        showToast(`Login ${authData.role === 'admin' ? 'admin' : 'user opname'} berhasil`, true);
+        if (typeof loadProdukOptions === 'function') await loadProdukOptions();
+        selectMenu(null, authData.role === 'admin' ? getSavedMenu() : 'opname');
       } catch (err) {
         console.error(err);
         showToast('Gagal menghubungi server auth', false);
       }
     }
+
+    async function performLogout() {
+      const auth = getStoredAuth();
+      try {
+        if (auth?.access_token) {
+          await fetch('/api/v1/auth/logout', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${auth.access_token}` }
+          });
+        }
+      } catch (err) {
+        console.warn('Logout server gagal, sesi lokal tetap dihapus', err);
+      } finally {
+        window.localStorage.removeItem('auth_user');
+        window.localStorage.removeItem('inventoryActiveMenu');
+        applyAuthState();
+        showToast('Anda sudah keluar', true);
+      }
+    }
+
+    applyAuthState();
   </script>
   <script>
     // Populate mock KPI data for local preview when backend not available
     function populateMockKPI() {
       const hasUser = !!window.localStorage.getItem('auth_user');
-      if (hasUser) return; // if logged in, real backend should provide data
+      if (!hasUser) return;
 
       const mapping = {
         kpi_qty: 12450,
@@ -1184,7 +1269,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      populateMockCharts();
+      if (window.localStorage.getItem('auth_user')) populateMockCharts();
     });
   </script>
   <script>
@@ -1207,7 +1292,7 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', () => populateMockPersediaan());
+    document.addEventListener('DOMContentLoaded', () => { if (window.localStorage.getItem('auth_user')) populateMockPersediaan(); });
   </script>
   <script>
     // Populate outlet and top-produk tables for richer preview
@@ -1233,7 +1318,7 @@
       topBody.innerHTML = items.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('');
     }
 
-    document.addEventListener('DOMContentLoaded', () => { populateMockOutlet(); populateMockTopProduk(); });
+    document.addEventListener('DOMContentLoaded', () => { if (window.localStorage.getItem('auth_user')) { populateMockOutlet(); populateMockTopProduk(); } });
   </script>
 </body>
 </html>
