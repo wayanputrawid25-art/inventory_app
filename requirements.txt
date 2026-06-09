@@ -1,70 +1,11 @@
-# CV EPIC Warehouse - Python Flask Requirements
-# Backend API untuk Sistem Inventory Warehouse Terintegrasi
+# CV EPIC Warehouse - V3 Node.js Backend
+# This is a Node.js/Express project, not Flask
+# See package.json for Node.js dependencies
 
-# Core Flask
-Flask==3.0.0
-Flask-MySQL==1.5.2
-Flask-SQLAlchemy==3.1.1
-PyMySQL==1.1.0
-python-dotenv==1.0.0
+# This file is kept for reference only
+# No Python dependencies needed for this project
 
-# Database & ORM
-SQLAlchemy==2.0.23
-pymysql==1.1.0
-psycopg2-binary==2.9.9
+# If you need Python for any scripts, install via:
+# pip install -r requirements-python.txt
 
-# Authentication & Security
-Flask-JWT-Extended==4.5.2
-PyJWT==2.8.0
-Werkzeug==3.0.1
-bcrypt==4.1.1
-cryptography==41.0.7
-
-# Barcode & QR Code Generation
-python-barcode==0.15.1
-qrcode==7.4.2
-Pillow==10.1.0
-
-# Data Validation & Serialization
-marshmallow==3.20.1
-marshmallow-sqlalchemy==0.29.0
-
-# File Handling & Export
-openpyxl==3.11.0
-python-dateutil==2.8.2
-pandas==2.1.3
-
-# API & Request Handling
-requests==2.31.0
-jsonschema==4.20.0
-
-# CORS for frontend
-Flask-CORS==4.0.0
-
-# Logging & Monitoring
-python-logging-loki==0.3.2
-sentry-sdk==1.38.0
-
-# Testing
-pytest==7.4.3
-pytest-cov==4.1.0
-pytest-flask==1.3.0
-
-# Code Quality
-black==23.12.0
-flake8==6.1.0
-pylint==3.0.3
-isort==5.13.2
-
-# Production Server
-gunicorn==21.2.0
-gevent==23.9.1
-
-# Additional Utilities
-click==8.1.7
-colorama==0.4.6
-tabulate==0.9.0
-
-# Celery untuk async tasks (optional)
-celery==5.3.4
-redis==5.0.1
+# NOTE: Old Flask requirements removed as project is now Node.js based
