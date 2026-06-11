@@ -530,6 +530,144 @@ button, input, select, textarea {
 }
 
 /* ============================================
+   ERP Dashboard - Modern KPI Cards
+   ============================================ */
+
+.erp-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.erp-dashboard__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.erp-dashboard__title h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.erp-dashboard__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.erp-dashboard__ts {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.erp-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+@media (min-width: 640px) {
+  .erp-kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+  }
+}
+
+@media (min-width: 1024px) {
+  .erp-kpi-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--space-4);
+  }
+}
+
+.erp-kpi {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  cursor: default;
+  position: relative;
+  overflow: hidden;
+}
+
+.erp-kpi:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  transform: translateY(-1px);
+}
+
+.erp-kpi--alert {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  animation: kpiPulse 2s infinite;
+}
+
+@keyframes kpiPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.2); }
+  50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+}
+
+.erp-kpi__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.erp-kpi__icon i, .erp-kpi__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.erp-kpi__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.erp-kpi__value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.erp-kpi__label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* Color variants */
+.erp-kpi--sale .erp-kpi__icon { background: #fef3c7; color: #d97706; }
+.erp-kpi--purchase .erp-kpi__icon { background: #dbeafe; color: #2563eb; }
+.erp-kpi--product .erp-kpi__icon { background: #d1fae5; color: #059669; }
+.erp-kpi--customer .erp-kpi__icon { background: #ede9fe; color: #7c3aed; }
+.erp-kpi--danger .erp-kpi__icon { background: #fee2e2; color: #dc2626; }
+.erp-kpi--success .erp-kpi__icon { background: #d1fae5; color: #059669; }
+.erp-kpi--warning .erp-kpi__icon { background: #fef3c7; color: #d97706; }
+.erp-kpi--user .erp-kpi__icon { background: #ede9fe; color: #7c3aed; }
+.erp-kpi--outlet .erp-kpi__icon { background: #ccfbf1; color: #0d9488; }
+
+/* Dark theme */
+[data-theme="dark"] .erp-kpi--alert {
+  background: rgba(239,68,68,0.12);
+}
+
+/* ============================================
    Analytics Section
    ============================================ */
 

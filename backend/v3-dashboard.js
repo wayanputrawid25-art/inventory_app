@@ -31,17 +31,24 @@ export default async function handler(req, res) {
       WHERE date_trunc('month', tanggal) = date_trunc('month', CURRENT_DATE)
     `);
 
-    // 4. Customer Aktif (outlet yang transaksi di periode ini)
+    // 4. Customer Aktif (outlet yang transaksi hari ini)
     const customerAktif = await pool.query(`
+      SELECT COUNT(DISTINCT nama_outlet) AS total
+      FROM penjualan
+      WHERE tanggal = $1
+    `, [today]);
+
+    // 5. Outlet Aktif (outlet yang transaksi di periode ini)
+    const outletAktif = await pool.query(`
       SELECT COUNT(DISTINCT nama_outlet) AS total
       FROM penjualan
       WHERE date_trunc('month', tanggal) = date_trunc('month', CURRENT_DATE)
     `);
 
-    // 5. Total Produk
+    // 6. Total Produk
     const totalProduk = await pool.query(`SELECT COUNT(*) AS total FROM produk`);
 
-    // 6. Total Outlet/Gerai
+    // 7. Total Outlet/Gerai
     const totalOutlet = await pool.query(`SELECT COUNT(*) AS total FROM outlet`);
 
     // 7. Stok Kritis - Produk dengan stok akhir <= min_stok atau stok = 0
@@ -112,62 +119,11 @@ export default async function handler(req, res) {
       WHERE status = 'menunggu_approval'
     `);
 
-    // 11. Task Aktif - Total active operations (pending + in_progress)
-    // Replaced non-existent task_center with stok_opname_perintah metrics
-    const taskAktif = await pool.query(`
-      SELECT COUNT(*) AS total
-      FROM stok_opname_perintah
-      WHERE status IN ('menunggu', 'proses', 'menunggu_approval')
-    `);
-
     // 12. Total Users
     const totalUsers = await pool.query(`
       SELECT COUNT(*) AS total
       FROM users
       WHERE is_active = true
-    `);
-
-    // 10. Aktivitas Terbaru (transaksi hari ini)
-    const aktivitasTerbaru = await pool.query(`
-      SELECT 
-        'penjualan' AS tipe,
-        p.nama_produk,
-        pj.qty,
-        pj.nama_outlet AS lokasi,
-        pj.tanggal,
-        pj.created_at
-      FROM penjualan pj
-      JOIN produk p ON p.sku = pj.sku
-      WHERE pj.tanggal = $1
-      UNION ALL
-      SELECT 
-        'pembelian' AS tipe,
-        p.nama_produk,
-        pb.qty,
-        'Gudang' AS lokasi,
-        pb.tanggal,
-        pb.created_at
-      FROM pembelian pb
-      JOIN produk p ON p.sku = pb.sku
-      WHERE pb.tanggal = $1
-      ORDER BY created_at DESC
-      LIMIT 10
-    `, [today]);
-
-    // 11. Penjualan Bulanan
-    const penjualanBulanan = await pool.query(`
-      SELECT 
-        COALESCE(SUM(qty), 0) AS total_qty
-      FROM penjualan
-      WHERE date_trunc('month', tanggal) = date_trunc('month', CURRENT_DATE)
-    `);
-
-    // 12. Pembelian Bulanan
-    const pembelianBulanan = await pool.query(`
-      SELECT 
-        COALESCE(SUM(qty), 0) AS total_qty
-      FROM pembelian
-      WHERE date_trunc('month', tanggal) = date_trunc('month', CURRENT_DATE)
     `);
 
     const result = {
@@ -176,16 +132,12 @@ export default async function handler(req, res) {
         customer_count: Number(penjualanHarian.rows[0]?.customer_count || 0),
         pembelian: Number(pembelianHarian.rows[0]?.total_qty || 0)
       },
-      monthly: {
-        penjualan: Number(penjualanBulanan.rows[0]?.total_qty || 0),
-        pembelian: Number(pembelianBulanan.rows[0]?.total_qty || 0)
-      },
       produk: {
         aktif: Number(produkAktif.rows[0]?.total || 0),
         total: Number(totalProduk.rows[0]?.total || 0)
       },
       outlet: {
-        aktif: Number(customerAktif.rows[0]?.total || 0),
+        aktif: Number(outletAktif.rows[0]?.total || 0),
         total: Number(totalOutlet.rows[0]?.total || 0)
       },
       stok: {
@@ -196,19 +148,9 @@ export default async function handler(req, res) {
         selesai_bulan_ini: Number(soSelesai.rows[0]?.total || 0),
         pending_approval: Number(pendingApproval.rows[0]?.total || 0)
       },
-      tasks: {
-        active: Number(taskAktif.rows[0]?.total || 0)
-      },
       users: {
         total: Number(totalUsers.rows[0]?.total || 0)
       },
-      aktivitas: aktivitasTerbaru.rows.map(a => ({
-        tipe: a.tipe,
-        produk: a.nama_produk,
-        qty: a.qty,
-        lokasi: a.lokasi,
-        waktu: a.created_at
-      })),
       generated_at: new Date().toISOString()
     };
 

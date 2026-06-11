@@ -845,8 +845,8 @@ function selectMenu(event, menu) {
 
   // Handle dashboard and admin menu
   if (menu === "dashboard" || menu === "admin") {
-    document.getElementById("adminTab").style.display = "block";
-    loadAdminDashboard();
+    document.getElementById("v3DashboardTab").style.display = "block";
+    loadV3Dashboard();
     return;
   }
 
@@ -1028,98 +1028,42 @@ async function loadData() {
   }
 }
 
-// V3 Dashboard Loader - FASE 6
+// V3 Dashboard Loader - MODERN ERP
 async function loadV3Dashboard() {
   try {
     const data = await fetchJson('/api/v3-dashboard');
-    
-    // Update timestamps
+
     if (data.generated_at) {
       const ts = document.getElementById('v3DashboardTimestamp');
-      if (ts) ts.textContent = `Updated: ${new Date(data.generated_at).toLocaleString('id-ID')}`;
+      if (ts) ts.textContent = new Date(data.generated_at).toLocaleString('id-ID');
     }
-    
-    // Update KPI cards - Today
-    setText("v3_penjualan_hari_ini", formatNumber(data.today?.penjualan || 0));
-    setText("v3_pembelian_hari_ini", formatNumber(data.today?.pembelian || 0));
-    setText("v3_customer_aktif", formatNumber(data.today?.customer_count || 0));
-    
-    // Update KPI cards - Monthly
-    setText("v3_produk_aktif", `${formatNumber(data.produk?.aktif || 0)} / ${formatNumber(data.produk?.total || 0)}`);
-    
-    // Update KPI cards - Stok & SO
-    const stokKritis = Number(data.stok?.kritis || 0);
-    setText("v3_stok_kritis", formatNumber(stokKritis));
-    
-    // Highlight if stok kritis > 0
-    const stokKritisCard = document.getElementById('v3_stok_kritis_card');
-    if (stokKritisCard) {
-      stokKritisCard.classList.toggle('kpi-alert', stokKritis > 0);
-    }
-    
-    setText("v3_so_berjalan", formatNumber(data.opname?.berjalan || 0));
-    setText("v3_so_selesai", formatNumber(data.opname?.selesai_bulan_ini || 0));
-    setText("v3_pending_approval", formatNumber(data.opname?.pending_approval || 0));
-    setText("v3_total_produk", formatNumber(data.produk?.total || 0));
-    setText("v3_total_users", formatNumber(data.users?.total || 0));
-    setText("v3_active_tasks", formatNumber(data.tasks?.active || 0));
-    setText("v3_total_outlet", formatNumber(data.outlet?.total || 0));
-    
-    // Highlight pending approval if > 0
-    const pendingApproval = Number(data.opname?.pending_approval || 0);
-    const pendingApprovalCard = document.getElementById('v3_pending_approval_card');
-    if (pendingApprovalCard) {
-      pendingApprovalCard.classList.toggle('kpi-alert', pendingApproval > 0);
-    }
-    
-    // Highlight active tasks if > 0
-    const activeTasks = Number(data.tasks?.active || 0);
-    const activeTasksCard = document.getElementById('v3_active_tasks_card');
-    if (activeTasksCard) {
-      activeTasksCard.classList.toggle('kpi-alert', activeTasks > 0);
-    }
-    
-    // Update Aktivitas table
-    const aktivitas = data.aktivitas || [];
-    const aktivitasTable = document.getElementById('v3AktivitasTable');
-    const aktivitasBody = document.getElementById('v3AktivitasBody');
-    const aktivitasEmpty = document.getElementById('v3AktivitasEmpty');
-    
-    if (aktivitas.length === 0) {
-      if (aktivitasTable) aktivitasTable.style.display = 'none';
-      if (aktivitasEmpty) aktivitasEmpty.textContent = 'Tidak ada aktivitas hari ini.';
-    } else {
-      if (aktivitasTable) aktivitasTable.style.display = 'table';
-      if (aktivitasEmpty) aktivitasEmpty.style.display = 'none';
-      
-      aktivitasBody.innerHTML = aktivitas.map(a => `
-        <tr>
-          <td><span class="status-badge status-${a.tipe === 'penjualan' ? 'info' : 'success'}">${a.tipe === 'penjualan' ? 'Jual' : 'Beli'}</span></td>
-          <td>${escapeHtml(a.produk || '-')}</td>
-          <td>${formatNumber(a.qty || 0)}</td>
-          <td>${escapeHtml(a.lokasi || '-')}</td>
-          <td>${a.waktu ? new Date(a.waktu).toLocaleString('id-ID') : '-'}</td>
-        </tr>
-      `).join('');
-    }
-    
+
+    setText("kpi_penjualan", formatNumber(data.today?.penjualan || 0));
+    setText("kpi_pembelian", formatNumber(data.today?.pembelian || 0));
+    setText("kpi_produk_aktif", formatNumber(data.produk?.aktif || 0));
+    setText("kpi_customer", formatNumber(data.today?.customer_count || 0));
+
+    const kritis = Number(data.stok?.kritis || 0);
+    setText("kpi_stok_kritis", formatNumber(kritis));
+    const kritisCard = document.getElementById('kpi_stok_kritis_card');
+    if (kritisCard) kritisCard.classList.toggle('erp-kpi--alert', kritis > 0);
+
+    setText("kpi_so_berjalan", formatNumber(data.opname?.berjalan || 0));
+
+    const pending = Number(data.opname?.pending_approval || 0);
+    setText("kpi_pending", formatNumber(pending));
+    const pendingCard = document.getElementById('kpi_pending_card');
+    if (pendingCard) pendingCard.classList.toggle('erp-kpi--alert', pending > 0);
+
+    setText("kpi_so_selesai", formatNumber(data.opname?.selesai_bulan_ini || 0));
+    setText("kpi_users", formatNumber(data.users?.total || 0));
+    setText("kpi_outlet", `${formatNumber(data.outlet?.aktif || 0)} / ${formatNumber(data.outlet?.total || 0)}`);
+
   } catch (error) {
-    console.error("V3 Dashboard load error:", error);
-    // Show empty state on error
-    setText("v3_penjualan_hari_ini", "Error");
-    setText("v3_pembelian_hari_ini", "Error");
-    setText("v3_produk_aktif", "Error");
-    setText("v3_customer_aktif", "Error");
-    setText("v3_stok_kritis", "Error");
-    setText("v3_so_berjalan", "Error");
-    setText("v3_so_selesai", "Error");
-    setText("v3_pending_approval", "Error");
-    setText("v3_total_produk", "Error");
-    setText("v3_total_users", "Error");
-    setText("v3_active_tasks", "Error");
-    setText("v3_total_outlet", "Error");
-    const aktivitasEmpty = document.getElementById('v3AktivitasEmpty');
-    if (aktivitasEmpty) aktivitasEmpty.textContent = 'Gagal memuat data. Periksa koneksi database.';
+    console.error("Dashboard load error:", error);
+    ["kpi_penjualan","kpi_pembelian","kpi_produk_aktif","kpi_customer",
+     "kpi_stok_kritis","kpi_so_berjalan","kpi_pending","kpi_so_selesai",
+     "kpi_users","kpi_outlet"].forEach(id => setText(id, "Error"));
   }
 }
 
@@ -3721,105 +3665,6 @@ function openPrintWindow({ title, subtitle = "", summary = [], headers = [], row
 // ============================================
 // Admin Dashboard Functions
 // ============================================
-
-function loadAdminDashboard() {
-  // Show/hide admin menu item based on role
-  const adminMenuItem = document.getElementById("adminMenuItem");
-  const isAdmin = getCurrentUserRole() === 'admin';
-  if (adminMenuItem) {
-    adminMenuItem.style.display = isAdmin ? 'flex' : 'none';
-  }
-
-  // Load real data from V3 Dashboard API
-  loadV3AdminDashboard();
-  
-  // Initialize Lucide icons
-  if (window.lucide) {
-    lucide.createIcons();
-  }
-}
-
-async function loadV3AdminDashboard() {
-  try {
-    const data = await fetchJson('/api/v3-dashboard');
-    
-    // Update admin KPI elements if they exist
-    const totalStock = document.getElementById("admin_total_stock");
-    const stockAlert = document.getElementById("admin_stock_alert");
-    const pendingOpname = document.getElementById("admin_pending_opname");
-    const pendingApproval = document.getElementById("admin_pending_approval");
-    const approvalCount = document.getElementById("approvalCount");
-    
-    if (totalStock) totalStock.textContent = formatNumber(data.produk?.total || 0);
-    if (stockAlert) stockAlert.textContent = formatNumber(data.stok?.kritis || 0);
-    if (pendingOpname) pendingOpname.textContent = formatNumber(data.opname?.berjalan || 0);
-    if (pendingApproval) pendingApproval.textContent = formatNumber(data.opname?.selesai_bulan_ini || 0);
-    if (approvalCount) approvalCount.textContent = `${data.opname?.selesai_bulan_ini || 0} bulan ini`;
-    
-  } catch (error) {
-    console.warn("Could not load V3 admin dashboard:", error);
-    const elements = ['admin_total_stock', 'admin_stock_alert', 'admin_pending_opname', 'admin_pending_approval'];
-    elements.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = '-';
-    });
-  }
-}
-
-function refreshAdminDashboard() {
-  showToast("Memuat ulang data admin dashboard...", true);
-  loadV3AdminDashboard();
-  setTimeout(() => {
-    showToast("Data admin dashboard telah diperbarui", true);
-    if (window.lucide) {
-      lucide.createIcons();
-    }
-  }, 500);
-}
-
-function navigateToAdminSection(section) {
-  showToast(`Navigasi ke ${section}...`, true);
-  
-  // Map section to menu
-  const sectionMap = {
-    'persediaan': 'persediaan',
-    'restock': 'persediaan',
-    'opname': 'opname',
-    'approval': 'opname',
-    'audit': 'persediaan'
-  };
-  
-  const targetMenu = sectionMap[section] || 'persediaan';
-  
-  // Navigate to the menu
-  selectMenu(null, targetMenu);
-}
-
-function filterRecentActivity() {
-  const filter = document.getElementById("activityFilter").value;
-  const activityItems = document.querySelectorAll(".activity-item");
-  
-  activityItems.forEach(item => {
-    if (filter === "all") {
-      item.style.display = "flex";
-      return;
-    }
-    
-    const iconClass = item.querySelector(".activity-item__icon").className;
-    const matchesFilter = iconClass.includes(`activity-${filter}`);
-    item.style.display = matchesFilter ? "flex" : "none";
-  });
-}
-
-// Initialize admin dashboard on page load
-document.addEventListener("DOMContentLoaded", () => {
-  if (isAuthenticated() && getCurrentUserRole() === 'admin') {
-    const adminMenuItem = document.getElementById("adminMenuItem");
-    if (adminMenuItem) {
-      adminMenuItem.style.display = "flex";
-    }
-  }
-});
 
 // ============================================
 // Operator Dashboard Functions

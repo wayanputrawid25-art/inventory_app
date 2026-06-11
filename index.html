@@ -310,164 +310,104 @@
 
     <!-- Legacy quick menu and tabs removed per cleanup -->
 
-    <!-- V3 ADMIN DASHBOARD - FASE 6 -->
+    <!-- V3 ERP DASHBOARD - MODERN WAREHOUSE -->
     <section id="v3DashboardTab" class="tab-content">
-      <div class="card">
-        <div class="section-header">
-          <div>
-            <p class="section-eyebrow">Dasbor Utama</p>
-            <h3>Apa yang perlu diketahui hari ini?</h3>
+      <div class="erp-dashboard">
+        <!-- Header -->
+        <div class="erp-dashboard__header">
+          <div class="erp-dashboard__title">
+            <p class="section-eyebrow">ERP Warehouse · Real-time</p>
+            <h2>Dashboard Operasional</h2>
           </div>
-          <div class="section-actions">
-            <span class="timestamp" id="v3DashboardTimestamp"></span>
-            <button class="btn-secondary" onclick="loadV3Dashboard()">
+          <div class="erp-dashboard__tools">
+            <span class="erp-dashboard__ts" id="v3DashboardTimestamp"></span>
+            <button class="btn-primary" onclick="loadV3Dashboard()">
               <i data-lucide="refresh-cw"></i> Refresh
             </button>
           </div>
         </div>
 
-        <!-- KPI Cards Row 1: Hari Ini -->
-        <div class="kpi-grid">
-          <div class="kpi-card kpi-orange">
-            <div class="kpi-card__icon">
-              <i data-lucide="shopping-cart"></i>
-            </div>
-            <div class="kpi-card__content">
-              <p class="kpi-card__label">Penjualan Hari Ini</p>
-              <h2 class="kpi-card__value" id="v3_penjualan_hari_ini">-</h2>
-            </div>
-          </div>
-          <div class="kpi-card kpi-blue">
-            <div class="kpi-card__icon">
-              <i data-lucide="package-plus"></i>
-            </div>
-            <div class="kpi-card__content">
-              <p class="kpi-card__label">Pembelian Hari Ini</p>
-              <h2 class="kpi-card__value" id="v3_pembelian_hari_ini">-</h2>
+        <!-- 10 KPI Cards -->
+        <div class="erp-kpi-grid">
+          <!-- 1. Penjualan Hari Ini -->
+          <div class="erp-kpi erp-kpi--sale">
+            <div class="erp-kpi__icon"><i data-lucide="shopping-cart"></i></div>
+            <div class="erp-kpi__body">
+              <span class="erp-kpi__value" id="kpi_penjualan">-</span>
+              <span class="erp-kpi__label">Penjualan Hari Ini</span>
             </div>
           </div>
-          <div class="kpi-card kpi-green">
-            <div class="kpi-card__icon">
-              <i data-lucide="box"></i>
-            </div>
-            <div class="kpi-card__content">
-              <p class="kpi-card__label">Produk Aktif</p>
-              <h2 class="kpi-card__value" id="v3_produk_aktif">-</h2>
-            </div>
-          </div>
-          <div class="kpi-card kpi-purple">
-            <div class="kpi-card__icon">
-              <i data-lucide="store"></i>
-            </div>
-            <div class="kpi-card__content">
-              <p class="kpi-card__label">Customer Aktif</p>
-              <h2 class="kpi-card__value" id="v3_customer_aktif">-</h2>
+          <!-- 2. Pembelian Hari Ini -->
+          <div class="erp-kpi erp-kpi--purchase">
+            <div class="erp-kpi__icon"><i data-lucide="package-plus"></i></div>
+            <div class="erp-kpi__body">
+              <span class="erp-kpi__value" id="kpi_pembelian">-</span>
+              <span class="erp-kpi__label">Pembelian Hari Ini</span>
             </div>
           </div>
-        </div>
-
-        <!-- KPI Cards Row 2: Warehouse & Operations -->
-        <div class="kpi-grid top-space">
-          <div class="kpi-card kpi-red" id="v3_stok_kritis_card">
-            <div class="kpi-card__icon">
-              <i data-lucide="alert-triangle"></i>
-            </div>
-            <div class="kpi-card__content">
-              <p class="kpi-card__label">Stok Kritis</p>
-              <h2 class="kpi-card__value" id="v3_stok_kritis">-</h2>
+          <!-- 3. Produk Aktif -->
+          <div class="erp-kpi erp-kpi--product">
+            <div class="erp-kpi__icon"><i data-lucide="box"></i></div>
+            <div class="erp-kpi__body">
+              <span class="erp-kpi__value" id="kpi_produk_aktif">-</span>
+              <span class="erp-kpi__label">Produk Aktif</span>
             </div>
           </div>
-          <div class="kpi-card kpi-yellow">
-            <div class="kpi-card__icon">
-              <i data-lucide="clipboard-list"></i>
-            </div>
-            <div class="kpi-card__content">
-              <p class="kpi-card__label">SO Berjalan</p>
-              <h2 class="kpi-card__value" id="v3_so_berjalan">-</h2>
-            </div>
-          </div>
-          <div class="kpi-card kpi-blue" id="v3_pending_approval_card">
-            <div class="kpi-card__icon">
-              <i data-lucide="clock"></i>
-            </div>
-            <div class="kpi-card__content">
-              <p class="kpi-card__label">Pending Approval</p>
-              <h2 class="kpi-card__value" id="v3_pending_approval">-</h2>
+          <!-- 4. Customer Aktif -->
+          <div class="erp-kpi erp-kpi--customer">
+            <div class="erp-kpi__icon"><i data-lucide="store"></i></div>
+            <div class="erp-kpi__body">
+              <span class="erp-kpi__value" id="kpi_customer">-</span>
+              <span class="erp-kpi__label">Customer Aktif Hari Ini</span>
             </div>
           </div>
-          <div class="kpi-card kpi-green">
-            <div class="kpi-card__icon">
-              <i data-lucide="check-circle"></i>
-            </div>
-            <div class="kpi-card__content">
-              <p class="kpi-card__label">SO Selesai Bulan Ini</p>
-              <h2 class="kpi-card__value" id="v3_so_selesai">-</h2>
-            </div>
-          </div>
-        </div>
-
-        <!-- KPI Cards Row 3: Team & Performance -->
-        <div class="kpi-grid top-space">
-          <div class="kpi-card kpi-purple">
-            <div class="kpi-card__icon">
-              <i data-lucide="users"></i>
-            </div>
-            <div class="kpi-card__content">
-              <p class="kpi-card__label">Total User Aktif</p>
-              <h2 class="kpi-card__value" id="v3_total_users">-</h2>
+          <!-- 5. Stok Kritis -->
+          <div class="erp-kpi erp-kpi--danger" id="kpi_stok_kritis_card">
+            <div class="erp-kpi__icon"><i data-lucide="alert-triangle"></i></div>
+            <div class="erp-kpi__body">
+              <span class="erp-kpi__value" id="kpi_stok_kritis">-</span>
+              <span class="erp-kpi__label">Stok Kritis</span>
             </div>
           </div>
-          <div class="kpi-card kpi-orange" id="v3_active_tasks_card">
-            <div class="kpi-card__icon">
-              <i data-lucide="activity"></i>
-            </div>
-            <div class="kpi-card__content">
-              <p class="kpi-card__label">Task Aktif</p>
-              <h2 class="kpi-card__value" id="v3_active_tasks">-</h2>
-            </div>
-          </div>
-          <div class="kpi-card kpi-gray">
-            <div class="kpi-card__icon">
-              <i data-lucide="layers"></i>
-            </div>
-            <div class="kpi-card__content">
-              <p class="kpi-card__label">Total Produk</p>
-              <h2 class="kpi-card__value" id="v3_total_produk">-</h2>
+          <!-- 6. SO Berjalan -->
+          <div class="erp-kpi erp-kpi--warning">
+            <div class="erp-kpi__icon"><i data-lucide="clipboard-list"></i></div>
+            <div class="erp-kpi__body">
+              <span class="erp-kpi__value" id="kpi_so_berjalan">-</span>
+              <span class="erp-kpi__label">SO Berjalan</span>
             </div>
           </div>
-          <div class="kpi-card kpi-green">
-            <div class="kpi-card__icon">
-              <i data-lucide="store"></i>
-            </div>
-            <div class="kpi-card__content">
-              <p class="kpi-card__label">Total Outlet</p>
-              <h2 class="kpi-card__value" id="v3_total_outlet">-</h2>
-            </div>
-          </div>
-        </div>
-
-        <!-- Aktivitas Terbaru -->
-        <div class="card top-space">
-          <div class="section-header">
-            <div>
-              <p class="section-eyebrow">Monitoring</p>
-              <h3>Aktivitas Terbaru</h3>
+          <!-- 7. Pending Approval -->
+          <div class="erp-kpi erp-kpi--warning" id="kpi_pending_card">
+            <div class="erp-kpi__icon"><i data-lucide="clock"></i></div>
+            <div class="erp-kpi__body">
+              <span class="erp-kpi__value" id="kpi_pending">-</span>
+              <span class="erp-kpi__label">Pending Approval</span>
             </div>
           </div>
-          <div id="v3AktivitasContainer">
-            <p class="page-caption" id="v3AktivitasEmpty">Memuat aktivitas...</p>
-            <table class="data-table" id="v3AktivitasTable" style="display:none;">
-              <thead>
-                <tr>
-                  <th>Tipe</th>
-                  <th>Produk</th>
-                  <th>Qty</th>
-                  <th>Lokasi</th>
-                  <th>Waktu</th>
-                </tr>
-              </thead>
-              <tbody id="v3AktivitasBody"></tbody>
-            </table>
+          <!-- 8. SO Selesai -->
+          <div class="erp-kpi erp-kpi--success">
+            <div class="erp-kpi__icon"><i data-lucide="check-circle"></i></div>
+            <div class="erp-kpi__body">
+              <span class="erp-kpi__value" id="kpi_so_selesai">-</span>
+              <span class="erp-kpi__label">SO Selesai Bulan Ini</span>
+            </div>
+          </div>
+          <!-- 9. User Aktif -->
+          <div class="erp-kpi erp-kpi--user">
+            <div class="erp-kpi__icon"><i data-lucide="users"></i></div>
+            <div class="erp-kpi__body">
+              <span class="erp-kpi__value" id="kpi_users">-</span>
+              <span class="erp-kpi__label">User Aktif</span>
+            </div>
+          </div>
+          <!-- 10. Outlet Aktif -->
+          <div class="erp-kpi erp-kpi--outlet">
+            <div class="erp-kpi__icon"><i data-lucide="building-2"></i></div>
+            <div class="erp-kpi__body">
+              <span class="erp-kpi__value" id="kpi_outlet">-</span>
+              <span class="erp-kpi__label">Outlet Aktif Bulan Ini</span>
+            </div>
           </div>
         </div>
       </div>
