@@ -540,28 +540,18 @@ async function buildDynamicMenu() {
   const container = document.getElementById('mainQuickMenu');
   if (!container) return;
 
-  // Try to fetch outlets and top products; if fail, use simple mock
   let outlets = [];
   let topProduk = [];
   try {
     outlets = toArray(await fetchJson('/api/outlet-list'));
   } catch (e) {
-    console.warn('Could not fetch outlets, using mock', e);
-    outlets = [
-      { id: 'OUT001', nama_outlet: 'Outlet Jakarta' },
-      { id: 'OUT002', nama_outlet: 'Outlet Bandung' },
-      { id: 'OUT003', nama_outlet: 'Outlet Surabaya' }
-    ];
+    console.warn('Could not fetch outlets', e);
   }
 
   try {
     topProduk = toArray(await fetchJson('/api/top-produk'));
   } catch (e) {
-    console.warn('Could not fetch top-produk, using mock', e);
-    topProduk = [
-      { sku: 'PRD001', nama_produk: 'Modul A' },
-      { sku: 'PRD002', nama_produk: 'Tas B' }
-    ];
+    console.warn('Could not fetch top-produk', e);
   }
 
   // Render outlet quick tiles (limit to 6)
@@ -3857,9 +3847,6 @@ function loadOperatorDashboard() {
     operatorDate.textContent = now.toLocaleDateString('id-ID', options);
   }
   
-  // Load mock progress data
-  populateMockOperatorProgress();
-  
   // Initialize Lucide icons
   if (window.lucide) {
     lucide.createIcons();
@@ -3867,27 +3854,13 @@ function loadOperatorDashboard() {
 }
 
 function populateMockOperatorProgress() {
-  // Simulate progress data
-  const mockData = {
-    tasksCompleted: 1,
-    tasksTotal: 3,
-    itemsCounted: 36,
-    varianceFound: 2
-  };
-  
-  // Update DOM
-  document.getElementById("operator_tasks_completed").innerHTML = `${mockData.tasksCompleted}<span>/<span id="operator_tasks_total">${mockData.tasksTotal}</span></span>`;
-  document.getElementById("operator_tasks_total").textContent = mockData.tasksTotal;
-  document.getElementById("operator_items_counted").textContent = mockData.itemsCounted;
-  document.getElementById("operator_variance").textContent = mockData.varianceFound;
-  
-  // Update progress bars
-  const tasksProgress = (mockData.tasksCompleted / mockData.tasksTotal) * 100;
-  document.getElementById("operatorTasksProgress").style.width = `${tasksProgress}%`;
-  
-  // Update task count badge
-  const remainingTasks = mockData.tasksTotal - mockData.tasksCompleted;
-  document.getElementById("taskCount").textContent = `${remainingTasks} tugas`;
+  const el = (id) => document.getElementById(id);
+  if (el("operator_tasks_completed")) el("operator_tasks_completed").innerHTML = `0<span>/<span id="operator_tasks_total">0</span></span>`;
+  if (el("operator_tasks_total")) el("operator_tasks_total").textContent = '0';
+  if (el("operator_items_counted")) el("operator_items_counted").textContent = '0';
+  if (el("operator_variance")) el("operator_variance").textContent = '0';
+  if (el("operatorTasksProgress")) el("operatorTasksProgress").style.width = '0%';
+  if (el("taskCount")) el("taskCount").textContent = '0 tugas';
 }
 
 function startTask(taskId) {
@@ -3952,122 +3925,8 @@ const TASK_PRIORITIES = {
   low: { label: 'Low', class: 'priority-badge--low' }
 };
 
-// Mock task data
-const mockTasks = [
-  {
-    id: 'TASK-001',
-    title: 'Lakukan Stok Opname Bulanan',
-    description: 'Lakukan pengecekan dan scan seluruh stok di gudang untuk periode Juni 2026.',
-    status: 'in_progress',
-    priority: 'high',
-    assignee: { id: 'admin', name: 'Admin', initials: 'AD' },
-    dueDate: '2026-06-10',
-    createdAt: '2026-06-01 09:00',
-    activity: [
-      { user: 'Admin', action: 'membuat task', time: '2 jam lalu' },
-      { user: 'Admin', action: 'menugaskan ke Operator', time: '1 jam lalu' },
-      { user: 'Operator', action: 'memulai task', time: '30 menit lalu' }
-    ]
-  },
-  {
-    id: 'TASK-002',
-    title: 'Verifikasi Stok Masuk',
-    description: 'Verifikasi dan approve transaksi stok masuk dari supplier.',
-    status: 'review',
-    priority: 'high',
-    assignee: { id: 'admin', name: 'Admin', initials: 'AD' },
-    dueDate: '2026-06-08',
-    createdAt: '2026-06-05 14:00',
-    activity: [
-      { user: 'Admin', action: 'membuat task', time: '1 hari lalu' },
-      { user: 'Operator', action: 'submit untuk review', time: '2 jam lalu' }
-    ]
-  },
-  {
-    id: 'TASK-003',
-    title: 'Update Data Outlet',
-    description: 'Update informasi dan status outlet yang tidak aktif.',
-    status: 'assigned',
-    priority: 'medium',
-    assignee: { id: 'operator', name: 'Operator', initials: 'OP' },
-    dueDate: '2026-06-15',
-    createdAt: '2026-06-06 10:00',
-    activity: [
-      { user: 'Admin', action: 'membuat task', time: '1 hari lalu' },
-      { user: 'Admin', action: 'menugaskan ke Operator', time: '1 hari lalu' }
-    ]
-  },
-  {
-    id: 'TASK-004',
-    title: 'Generate Laporan Stok',
-    description: 'Buat laporan stok bulanan untuk periode Mei 2026.',
-    status: 'draft',
-    priority: 'low',
-    assignee: { id: 'admin', name: 'Admin', initials: 'AD' },
-    dueDate: '2026-06-20',
-    createdAt: '2026-06-07 08:00',
-    activity: [
-      { user: 'Admin', action: 'membuat task', time: '5 menit lalu' }
-    ]
-  },
-  {
-    id: 'TASK-005',
-    title: 'Cek Stok Rak A1',
-    description: 'Lakukan pengecekan fisik stok di rak A1.',
-    status: 'assigned',
-    priority: 'medium',
-    assignee: { id: 'operator', name: 'Operator', initials: 'OP' },
-    dueDate: '2026-06-09',
-    createdAt: '2026-06-06 16:00',
-    activity: [
-      { user: 'Admin', action: 'membuat task', time: '2 hari lalu' },
-      { user: 'Admin', action: 'menugaskan ke Operator', time: '1 hari lalu' }
-    ]
-  },
-  {
-    id: 'TASK-006',
-    title: 'Restock Modul A',
-    description: 'Lakukan pemesanan restock untuk produk Modul A yang stoknya rendah.',
-    status: 'in_progress',
-    priority: 'high',
-    assignee: { id: 'admin', name: 'Admin', initials: 'AD' },
-    dueDate: '2026-06-07',
-    createdAt: '2026-06-04 11:00',
-    activity: [
-      { user: 'Admin', action: 'membuat task', time: '3 hari lalu' },
-      { user: 'Admin', action: 'memulai task', time: '1 hari lalu' }
-    ]
-  },
-  {
-    id: 'TASK-007',
-    title: 'Export Data Penjualan',
-    description: 'Export data penjualan untuk audit bulanan.',
-    status: 'closed',
-    priority: 'medium',
-    assignee: { id: 'admin', name: 'Admin', initials: 'AD' },
-    dueDate: '2026-06-05',
-    createdAt: '2026-06-01 09:00',
-    activity: [
-      { user: 'Admin', action: 'membuat task', time: '1 minggu lalu' },
-      { user: 'Admin', action: 'menugaskan ke Admin', time: '1 minggu lalu' },
-      { user: 'Admin', action: 'menyelesaikan task', time: '5 hari lalu' }
-    ]
-  },
-  {
-    id: 'TASK-008',
-    title: 'Training Sistem Opname',
-    description: 'Lakukan training penggunaan sistem opname untuk operator baru.',
-    status: 'closed',
-    priority: 'low',
-    assignee: { id: 'operator', name: 'Operator', initials: 'OP' },
-    dueDate: '2026-06-01',
-    createdAt: '2026-05-28 10:00',
-    activity: [
-      { user: 'Admin', action: 'membuat task', time: '2 minggu lalu' },
-      { user: 'Operator', action: 'menyelesaikan task', time: '1 minggu lalu' }
-    ]
-  }
-];
+// Task data (loaded from session)
+const mockTasks = [];
 
 let currentTaskView = 'list';
 
@@ -4473,157 +4332,7 @@ const APPROVAL_STATUSES = {
   recount: { label: 'Recount', class: 'approval-status-chip--recount' }
 };
 
-// Mock approval data
-const mockApprovals = [
-  {
-    id: 'APR-001',
-    type: 'opname',
-    title: 'Stok Opname Gudang Utama - Juni 2026',
-    description: 'Stock opname bulanan untuk periode Juni 2026. Total 145 SKU dihitung.',
-    submitter: { id: 'operator1', name: 'Budi Santoso', initials: 'BS' },
-    submittedAt: '2026-06-07 14:30',
-    priority: 'high',
-    status: 'pending',
-    discrepancy: {
-      sistem: 1250,
-      fisik: 1235,
-      selisih: -15
-    },
-    history: [
-      { action: 'submitted', user: 'Budi Santoso', time: '2 jam lalu' },
-      { action: 'assigned', user: 'System', time: '2 jam lalu' }
-    ]
-  },
-  {
-    id: 'APR-002',
-    type: 'adjustment',
-    title: 'Penyesuaian Stok Modul A',
-    description: 'Penyesuaian stok karena kerusakan barang saat pengiriman.',
-    submitter: { id: 'operator2', name: 'Siti Rahayu', initials: 'SR' },
-    submittedAt: '2026-06-07 10:15',
-    priority: 'medium',
-    status: 'pending',
-    discrepancy: {
-      sistem: 50,
-      fisik: 45,
-      selisih: -5
-    },
-    history: [
-      { action: 'submitted', user: 'Siti Rahayu', time: '6 jam lalu' },
-      { action: 'assigned', user: 'System', time: '6 jam lalu' }
-    ]
-  },
-  {
-    id: 'APR-003',
-    type: 'opname',
-    title: 'Stok Opname Rak A1 - Mei 2026',
-    description: 'Recount hasil opname Rak A1 setelah ditemukan discrepancy.',
-    submitter: { id: 'operator1', name: 'Budi Santoso', initials: 'BS' },
-    submittedAt: '2026-06-06 16:45',
-    priority: 'high',
-    status: 'recount',
-    discrepancy: {
-      sistem: 80,
-      fisik: 78,
-      selisih: -2
-    },
-    history: [
-      { action: 'recount requested', user: 'Admin', time: '1 hari lalu' },
-      { action: 'resubmitted', user: 'Budi Santoso', time: '1 hari lalu' },
-      { action: 'submitted', user: 'Budi Santoso', time: '2 hari lalu' }
-    ]
-  },
-  {
-    id: 'APR-004',
-    type: 'opname',
-    title: 'Stok Opname Gudang Timur - Juni 2026',
-    description: 'Stock opname gudang timur untuk periode Juni 2026.',
-    submitter: { id: 'operator3', name: 'Ahmad Wijaya', initials: 'AW' },
-    submittedAt: '2026-06-06 09:00',
-    priority: 'low',
-    status: 'pending',
-    discrepancy: {
-      sistem: 320,
-      fisik: 320,
-      selisih: 0
-    },
-    history: [
-      { action: 'submitted', user: 'Ahmad Wijaya', time: '1 hari lalu' },
-      { action: 'assigned', user: 'System', time: '1 hari lalu' }
-    ]
-  },
-  {
-    id: 'APR-005',
-    type: 'task',
-    title: 'Task: Update Stok Masuk',
-    description: 'Task untuk update data stok masuk dari supplier.',
-    submitter: { id: 'admin1', name: 'Admin', initials: 'AD' },
-    submittedAt: '2026-06-05 15:30',
-    priority: 'medium',
-    status: 'pending',
-    discrepancy: null,
-    history: [
-      { action: 'submitted for approval', user: 'Admin', time: '2 hari lalu' }
-    ]
-  },
-  {
-    id: 'APR-006',
-    type: 'opname',
-    title: 'Stok Opname Gudang Utara - Mei 2026',
-    description: 'Stock opname bulanan Mei 2026 untuk gudang utara.',
-    submitter: { id: 'operator2', name: 'Siti Rahayu', initials: 'SR' },
-    submittedAt: '2026-06-01 11:20',
-    priority: 'medium',
-    status: 'approved',
-    discrepancy: {
-      sistem: 450,
-      fisik: 448,
-      selisih: -2
-    },
-    history: [
-      { action: 'approved', user: 'Admin', time: '1 minggu lalu' },
-      { action: 'submitted', user: 'Siti Rahayu', time: '1 minggu lalu' }
-    ]
-  },
-  {
-    id: 'APR-007',
-    type: 'adjustment',
-    title: 'Penyesuaian Stok Tas B',
-    description: 'Penyesuaian karena barang kadaluarsa.',
-    submitter: { id: 'operator1', name: 'Budi Santoso', initials: 'BS' },
-    submittedAt: '2026-05-30 14:00',
-    priority: 'high',
-    status: 'rejected',
-    discrepancy: {
-      sistem: 100,
-      fisik: 85,
-      selisih: -15
-    },
-    history: [
-      { action: 'rejected', user: 'Admin', time: '2 minggu lalu' },
-      { action: 'submitted', user: 'Budi Santoso', time: '2 minggu lalu' }
-    ]
-  },
-  {
-    id: 'APR-008',
-    type: 'opname',
-    title: 'Stok Opname Gudang Barat - Mei 2026',
-    description: 'Stock opname bulanan Mei 2026 untuk gudang barat.',
-    submitter: { id: 'operator3', name: 'Ahmad Wijaya', initials: 'AW' },
-    submittedAt: '2026-05-29 10:30',
-    priority: 'low',
-    status: 'approved',
-    discrepancy: {
-      sistem: 280,
-      fisik: 280,
-      selisih: 0
-    },
-    history: [
-      { action: 'approved', user: 'Admin', time: '2 minggu lalu' },
-      { action: 'submitted', user: 'Ahmad Wijaya', time: '2 minggu lalu' }
-    ]
-  }
-];
+const mockApprovals = [];
 
 let currentApprovalFilter = 'pending';
 
@@ -4769,25 +4478,17 @@ function renderApprovalList(filteredApprovals) {
 }
 
 function updateApprovalStats() {
-  const stats = {
-    total: mockApprovals.filter(a => a.status === 'pending').length,
-    urgent: mockApprovals.filter(a => a.status === 'pending' && a.priority === 'high').length,
-    opname: mockApprovals.filter(a => a.type === 'opname' && a.status === 'pending').length,
-    adjustment: mockApprovals.filter(a => a.type === 'adjustment' && a.status === 'pending').length,
-    approved: mockApprovals.filter(a => a.status === 'approved').length,
-    rejected: mockApprovals.filter(a => a.status === 'rejected').length,
-    recount: mockApprovals.filter(a => a.status === 'recount').length
-  };
-
-  document.getElementById('approvalCountTotal').textContent = stats.total;
-  document.getElementById('approvalCountUrgent').textContent = stats.urgent;
-  document.getElementById('approvalCountOpname').textContent = stats.opname;
-  document.getElementById('approvalCountAdjustment').textContent = stats.adjustment;
-  document.getElementById('approvalCountApproved').textContent = stats.approved;
-  document.getElementById('pendingCount').textContent = stats.total;
-  document.getElementById('approvedCount').textContent = stats.approved;
-  document.getElementById('rejectedCount').textContent = stats.rejected;
-  document.getElementById('recountCount').textContent = stats.recount;
+  const a = realApprovals;
+  const pending = a.filter(x => x.status === 'pending');
+  document.getElementById('approvalCountTotal').textContent = pending.length;
+  document.getElementById('approvalCountUrgent').textContent = pending.filter(x => x.priority === 'high').length;
+  document.getElementById('approvalCountOpname').textContent = pending.filter(x => x.type === 'opname').length;
+  document.getElementById('approvalCountAdjustment').textContent = pending.filter(x => x.type === 'adjustment').length;
+  document.getElementById('approvalCountApproved').textContent = a.filter(x => x.status === 'approved').length;
+  document.getElementById('pendingCount').textContent = pending.length;
+  document.getElementById('approvedCount').textContent = a.filter(x => x.status === 'approved').length;
+  document.getElementById('rejectedCount').textContent = a.filter(x => x.status === 'rejected').length;
+  document.getElementById('recountCount').textContent = a.filter(x => x.status === 'recount').length;
 }
 
 function setApprovalFilter(filter) {
@@ -5041,174 +4742,7 @@ const ACTIVITY_TYPES = {
   stok: { label: 'Stok', class: 'activity-type-badge--stok', icon: 'boxes' }
 };
 
-// Mock activity data
-const mockActivities = [
-  {
-    id: 'ACT-001',
-    type: 'opname',
-    title: 'Stok opname selesai',
-    description: 'Operator Budi Santoso menyelesaikan stok opname gudang utama dengan 145 SKU dihitung.',
-    actor: { id: 'operator1', name: 'Budi Santoso', initials: 'BS' },
-    timestamp: '2026-06-08 08:45',
-    resourceType: 'opname',
-    resourceId: 'SO-2024-001',
-    details: { skuCount: 145, discrepancyCount: 8 }
-  },
-  {
-    id: 'ACT-002',
-    type: 'approval',
-    title: 'Approval disetujui',
-    description: 'Admin menyetujui stok opname gudang utara untuk periode Mei 2026.',
-    actor: { id: 'admin1', name: 'Admin', initials: 'AD' },
-    timestamp: '2026-06-08 07:30',
-    resourceType: 'approval',
-    resourceId: 'APR-006',
-    details: { approvedItems: 450 }
-  },
-  {
-    id: 'ACT-003',
-    type: 'task',
-    title: 'Task dibuat',
-    description: 'Admin membuat task baru: Lakukan Stok Opname Bulanan.',
-    actor: { id: 'admin1', name: 'Admin', initials: 'AD' },
-    timestamp: '2026-06-08 06:15',
-    resourceType: 'task',
-    resourceId: 'TASK-001',
-    details: { priority: 'high', assignee: 'Operator' }
-  },
-  {
-    id: 'ACT-004',
-    type: 'stok',
-    title: 'Stok masuk',
-    description: 'Penerimaan barang dari supplier: Modul A (50 unit), Tas B (30 unit).',
-    actor: { id: 'operator2', name: 'Siti Rahayu', initials: 'SR' },
-    timestamp: '2026-06-07 16:45',
-    resourceType: 'pembelian',
-    resourceId: 'PO-2024-045',
-    details: { items: 2, totalUnits: 80 }
-  },
-  {
-    id: 'ACT-005',
-    type: 'opname',
-    title: 'Recount diminta',
-    description: 'Admin meminta recount untuk Rak A1 setelah ditemukan discrepancy.',
-    actor: { id: 'admin1', name: 'Admin', initials: 'AD' },
-    timestamp: '2026-06-07 14:20',
-    resourceType: 'opname',
-    resourceId: 'APR-003',
-    details: { location: 'Rak A1' }
-  },
-  {
-    id: 'ACT-006',
-    type: 'approval',
-    title: 'Penyesuaian ditolak',
-    description: 'Admin menolak penyesuaian stok Tas B karena alasan tidak valid.',
-    actor: { id: 'admin1', name: 'Admin', initials: 'AD' },
-    timestamp: '2026-06-07 11:30',
-    resourceType: 'approval',
-    resourceId: 'APR-007',
-    details: { reason: 'Bukti tidak cukup' }
-  },
-  {
-    id: 'ACT-007',
-    type: 'task',
-    title: 'Status task diupdate',
-    description: 'Task "Export Data Penjualan" dipindahkan ke status Closed.',
-    actor: { id: 'admin1', name: 'Admin', initials: 'AD' },
-    timestamp: '2026-06-07 09:00',
-    resourceType: 'task',
-    resourceId: 'TASK-007',
-    details: { oldStatus: 'approved', newStatus: 'closed' }
-  },
-  {
-    id: 'ACT-008',
-    type: 'auth',
-    title: 'User login',
-    description: 'Admin berhasil login ke sistem.',
-    actor: { id: 'admin1', name: 'Admin', initials: 'AD' },
-    timestamp: '2026-06-07 08:00',
-    resourceType: 'auth',
-    resourceId: null,
-    details: { method: 'password' }
-  },
-  {
-    id: 'ACT-009',
-    type: 'stok',
-    title: 'Export laporan stok',
-    description: 'Laporan stok bulanan untuk periode Mei 2026 berhasil di-export.',
-    actor: { id: 'admin1', name: 'Admin', initials: 'AD' },
-    timestamp: '2026-06-06 15:30',
-    resourceType: 'report',
-    resourceId: 'LAP-2024-05',
-    details: { format: 'Excel', period: 'May 2026' }
-  },
-  {
-    id: 'ACT-010',
-    type: 'opname',
-    title: 'Scan barcode selesai',
-    description: 'Operator Ahmad Wijaya menyelesaikan scan barcode untuk 50 item.',
-    actor: { id: 'operator3', name: 'Ahmad Wijaya', initials: 'AW' },
-    timestamp: '2026-06-06 12:00',
-    resourceType: 'opname',
-    resourceId: 'SO-2024-002',
-    details: { itemsScanned: 50 }
-  },
-  {
-    id: 'ACT-011',
-    type: 'adjustment',
-    title: 'Penyesuaian stok diterapkan',
-    description: 'Penyesuaian stok untuk Modul A (+5 unit) berhasil diterapkan.',
-    actor: { id: 'system', name: 'System', initials: 'SY' },
-    timestamp: '2026-06-06 10:15',
-    resourceType: 'adjustment',
-    resourceId: 'ADJ-2024-012',
-    details: { sku: 'SKU-001', change: '+5', reason: 'Recount correction' }
-  },
-  {
-    id: 'ACT-012',
-    type: 'task',
-    title: 'Task ditugaskan',
-    description: 'Task "Update Data Outlet" ditugaskan ke Operator.',
-    actor: { id: 'admin1', name: 'Admin', initials: 'AD' },
-    timestamp: '2026-06-06 09:30',
-    resourceType: 'task',
-    resourceId: 'TASK-003',
-    details: { assignee: 'Operator' }
-  },
-  {
-    id: 'ACT-013',
-    type: 'stok',
-    title: 'Import data penjualan',
-    description: 'Admin import 45 transaksi penjualan dari file CSV.',
-    actor: { id: 'admin1', name: 'Admin', initials: 'AD' },
-    timestamp: '2026-06-05 14:00',
-    resourceType: 'penjualan',
-    resourceId: 'IMP-2024-008',
-    details: { transactions: 45 }
-  },
-  {
-    id: 'ACT-014',
-    type: 'approval',
-    title: 'Approval baru',
-    description: 'Stok opname gudang utama (Juni 2026) menunggu approval.',
-    actor: { id: 'operator1', name: 'Budi Santoso', initials: 'BS' },
-    timestamp: '2026-06-05 10:00',
-    resourceType: 'approval',
-    resourceId: 'APR-001',
-    details: { priority: 'high' }
-  },
-  {
-    id: 'ACT-015',
-    type: 'auth',
-    title: 'User logout',
-    description: 'Operator Budi Santoso logout dari sistem.',
-    actor: { id: 'operator1', name: 'Budi Santoso', initials: 'BS' },
-    timestamp: '2026-06-04 18:00',
-    resourceType: 'auth',
-    resourceId: null,
-    details: { sessionDuration: '8h 30m' }
-  }
-];
+const mockActivities = [];
 
 let currentActivityView = 'timeline';
 let activityPage = 1;
@@ -5474,153 +5008,7 @@ const AUDIT_ORIGINS = {
   mobile: { label: 'Mobile', icon: 'smartphone' }
 };
 
-// Mock audit data
-const mockAuditLogs = [
-  {
-    id: 'AUD-001',
-    timestamp: '2026-06-08 08:45:00',
-    user: { id: 'admin', name: 'Admin', initials: 'AD', role: 'Admin' },
-    action: 'approved',
-    resourceType: 'opname_session',
-    resourceId: 'OP-2024-001',
-    changeSummary: 'status: Submitted → Approved; adjustments_applied: false → true',
-    origin: 'web',
-    before: { status: 'Submitted', adjustments_pending: 12 },
-    after: { status: 'Approved', adjustments_applied: true }
-  },
-  {
-    id: 'AUD-002',
-    timestamp: '2026-06-08 07:30:00',
-    user: { id: 'operator1', name: 'Budi Santoso', initials: 'BS', role: 'Operator' },
-    action: 'submitted',
-    resourceType: 'opname_session',
-    resourceId: 'OP-2024-002',
-    changeSummary: 'Submitted stock opname for Gudang Utama',
-    origin: 'mobile',
-    before: { status: 'In Progress' },
-    after: { status: 'Submitted' }
-  },
-  {
-    id: 'AUD-003',
-    timestamp: '2026-06-08 06:15:00',
-    user: { id: 'admin', name: 'Admin', initials: 'AD', role: 'Admin' },
-    action: 'created',
-    resourceType: 'task',
-    resourceId: 'TASK-001',
-    changeSummary: 'Created task: Lakukan Stok Opname Bulanan',
-    origin: 'web',
-    before: null,
-    after: { title: 'Lakukan Stok Opname Bulanan', priority: 'high', assignee: 'Operator' }
-  },
-  {
-    id: 'AUD-004',
-    timestamp: '2026-06-07 16:45:00',
-    user: { id: 'system', name: 'System', initials: 'SY', role: 'System' },
-    action: 'updated',
-    resourceType: 'item',
-    resourceId: 'SKU-001',
-    changeSummary: 'stock_quantity: 100 → 95; last_updated: 2026-06-07',
-    origin: 'api',
-    before: { stock_quantity: 100 },
-    after: { stock_quantity: 95 }
-  },
-  {
-    id: 'AUD-005',
-    timestamp: '2026-06-07 14:20:00',
-    user: { id: 'admin', name: 'Admin', initials: 'AD', role: 'Admin' },
-    action: 'rejected',
-    resourceType: 'approval',
-    resourceId: 'APR-007',
-    changeSummary: 'Penyesuaian Tas B ditolak - Bukti tidak cukup',
-    origin: 'web',
-    before: { status: 'Pending' },
-    after: { status: 'Rejected', reason: 'Bukti tidak cukup' }
-  },
-  {
-    id: 'AUD-006',
-    timestamp: '2026-06-07 12:00:00',
-    user: { id: 'operator2', name: 'Siti Rahayu', initials: 'SR', role: 'Operator' },
-    action: 'created',
-    resourceType: 'opname_session',
-    resourceId: 'OP-2024-003',
-    changeSummary: 'Created new opname session for Gudang Timur',
-    origin: 'mobile',
-    before: null,
-    after: { location: 'Gudang Timur', status: 'Draft' }
-  },
-  {
-    id: 'AUD-007',
-    timestamp: '2026-06-07 11:30:00',
-    user: { id: 'operator1', name: 'Budi Santoso', initials: 'BS', role: 'Operator' },
-    action: 'updated',
-    resourceType: 'opname_session',
-    resourceId: 'OP-2024-001',
-    changeSummary: 'item_count: 45 → 50; discrepancy_count: 0 → 2',
-    origin: 'mobile',
-    before: { item_count: 45 },
-    after: { item_count: 50, discrepancy_count: 2 }
-  },
-  {
-    id: 'AUD-008',
-    timestamp: '2026-06-07 09:00:00',
-    user: { id: 'operator1', name: 'Budi Santoso', initials: 'BS', role: 'Operator' },
-    action: 'login',
-    resourceType: 'user',
-    resourceId: 'operator1',
-    changeSummary: 'User logged in successfully',
-    origin: 'web',
-    before: null,
-    after: { session_id: 'sess_abc123', ip: '192.168.1.10' }
-  },
-  {
-    id: 'AUD-009',
-    timestamp: '2026-06-07 08:30:00',
-    user: { id: 'admin', name: 'Admin', initials: 'AD', role: 'Admin' },
-    action: 'updated',
-    resourceType: 'approval',
-    resourceId: 'APR-003',
-    changeSummary: 'status: Pending → Recount; notes: Diminta recount Rak A1',
-    origin: 'web',
-    before: { status: 'Pending' },
-    after: { status: 'Recount', notes: 'Diminta recount Rak A1' }
-  },
-  {
-    id: 'AUD-010',
-    timestamp: '2026-06-06 16:45:00',
-    user: { id: 'system', name: 'System', initials: 'SY', role: 'System' },
-    action: 'created',
-    resourceType: 'adjustment',
-    resourceId: 'ADJ-2024-012',
-    changeSummary: 'Auto-adjustment: SKU-001 +5 units (recount correction)',
-    origin: 'api',
-    before: { stock_quantity: 95 },
-    after: { stock_quantity: 100 }
-  },
-  {
-    id: 'AUD-011',
-    timestamp: '2026-06-06 15:00:00',
-    user: { id: 'admin', name: 'Admin', initials: 'AD', role: 'Admin' },
-    action: 'deleted',
-    resourceType: 'task',
-    resourceId: 'TASK-OLD-001',
-    changeSummary: 'Deleted task: Task Obsolete',
-    origin: 'web',
-    before: { title: 'Task Obsolete', status: 'Closed' },
-    after: null
-  },
-  {
-    id: 'AUD-012',
-    timestamp: '2026-06-06 12:30:00',
-    user: { id: 'operator3', name: 'Ahmad Wijaya', initials: 'AW', role: 'Operator' },
-    action: 'logout',
-    resourceType: 'user',
-    resourceId: 'operator3',
-    changeSummary: 'User logged out; session_duration: 8h 30m',
-    origin: 'mobile',
-    before: { session_active: true },
-    after: { session_active: false, session_duration: '8h 30m' }
-  }
-];
+const mockAuditLogs = [];
 
 let currentAuditView = 'table';
 let auditPage = 1;
