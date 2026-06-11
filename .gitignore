@@ -1,0 +1,15 @@
+.vercel
+node_modules
+.env
+.env.local
+.env*.local
+server*.out
+server*.err
+.DS_Store
+__pycache__/
+*.py[cod]
+*.db
+logs/
+static/barcodes/
+static/uploads/
+static/reports/

@@ -1,0 +1,25 @@
+{
+  "name": "inventory-app",
+  "version": "3.0.0",
+  "description": "CV EPIC Warehouse Inventory Control Suite V3",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "echo 'Static app - no build needed'",
+    "init-db": "node init-db.js",
+    "lint": "echo 'No lint configured'",
+    "test": "echo 'No tests configured'"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "mysql2": "^3.22.3",
+    "pg": "^8.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
